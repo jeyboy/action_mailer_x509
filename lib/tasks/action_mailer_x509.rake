@@ -2,7 +2,7 @@ require 'rake'
 require 'rake/testtask'
 require 'rdoc/task'
 require 'models/notifier'
-require 'actionmailer_x509/x509'
+require 'action_mailer_x509/x509'
 
 namespace :action_mailer_x509 do
   desc 'Run all checks'
