@@ -8,15 +8,15 @@ namespace :action_mailer_x509 do
   desc 'Run all checks'
   task :all do
     puts '*' * 20 << 'SIGN VERIFICATION'
-    Rake::Task['actionmailer_x509:verify_signature'].invoke
+    Rake::Task['action_mailer_x509:verify_signature'].invoke
     puts '*' * 20 << 'OPENSSL SIGN VERIFICATION'
-    Rake::Task['actionmailer_x509:verify_signature_by_openssl'].invoke
+    Rake::Task['action_mailer_x509:verify_signature_by_openssl'].invoke
     puts '*' * 20 << 'CRYPT VERIFICATION'
-    Rake::Task['actionmailer_x509:verify_crypt'].invoke
+    Rake::Task['action_mailer_x509:verify_crypt'].invoke
     puts '*' * 20 << 'OPENSSL CRYPT VERIFICATION'
-    Rake::Task['actionmailer_x509:verify_crypt_by_openssl'].invoke
+    Rake::Task['action_mailer_x509:verify_crypt_by_openssl'].invoke
     puts '*' * 20 << 'SIGN AND CRYPT VERIFICATION'
-    Rake::Task['actionmailer_x509:verify_sign_and_crypt'].invoke
+    Rake::Task['action_mailer_x509:verify_sign_and_crypt'].invoke
     puts '*' * 20
   end
 
