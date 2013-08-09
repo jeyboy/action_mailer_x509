@@ -55,6 +55,48 @@ Put this line in your Gemfile
 
 == USING
 
+First for all - run install generator, which adds configuration file
+
+    rails g action_mailer_x509:install
+
+After the process, add base configurations for emails processing
+
+  config.add_configuration :demo,
+                           {
+                               sign_enable: false,
+                               crypt_enable: true,
+                               sign_cert: 'cert.crt',
+                               sign_key: 'cert.key',
+                               sign_passphrase: 'demo',
+                               crypt_cert: 'cert.crt',
+                               crypt_key: 'cert.key',
+                               crypt_passphrase: 'demo',
+                               certs_path: Rails.root.join('certs')
+                           }
+
+  config.add_configuration :none,
+                           {
+                               sign_enable: false,
+                               crypt_enable: false,
+                           }
+
+and set default configuration
+
+  config.default_configuration = :hisp
+
+You may also add the configurations dynamically.
+
+And you may also change the default configuration in any place of the program:
+
+1) Change globally
+
+   ActionMailerX509.default_configuration = :demo
+
+2) Change only for decoding and verifyng if you use Mail object
+
+   Mail.new(encoded_text).proceed(configuration)
+
+If you set configuration as nil in "proceed" func, "ActionMailerX509.default_configuration" will be used.
 
 
 == USING TEST
@@ -63,15 +105,15 @@ You can benchmark the plugin with:
 
   rake actionmailer_x509:performance_test
 
-Send yourself a signed mail with:
+Send yourself a signed email with:
 
   rake actionmailer_x509:send_test
 
-Verify the plugin generates valid signature
+Verify the gem which generates valid signature
 
   rake actionmailer_x509:verify_signature
 
-Generate a signed mail in a local file
+Generate a signed email in a local file
 
   rake actionmailer_x509:generate_mail
 
@@ -88,7 +130,8 @@ readable.
 
  * Thunderbird 5.0: OK
  * Apple Mail.app: OK
- * Google Mail: A file smime.p3s appears as attachment
+ * Google Mail: A file smime.p7s appears as attachment
+ * Google Mail + Penango: OK
 
 == AUTHORS
 
@@ -111,8 +154,7 @@ modification, are permitted provided that the following conditions are met:
     * Redistributions in binary form must reproduce the above copyright
       notice, this list of conditions and the following disclaimer in the
       documentation and/or other materials provided with the distribution.
-    * Neither the name of the University of California, Berkeley nor the
-      names of its contributors may be used to endorse or promote products
+    * Names of its contributors may be used to endorse or promote products
       derived from this software without specific prior written permission.
 
 THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND ANY

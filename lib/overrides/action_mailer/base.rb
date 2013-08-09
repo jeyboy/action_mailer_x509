@@ -14,7 +14,7 @@ module ActionMailer #:nodoc:
     alias_method :old_mail, :mail
 
     def configuration
-      ActionMailerX509.get_configuration(self.class.x509_configuration)
+      ActionMailerX509.get_configuration(x509_configuration)
     end
 
     def mail(headers = {}, &block)
@@ -25,10 +25,9 @@ module ActionMailer #:nodoc:
     private
     # X509 SMIME signing and\or crypting
     def x509_smime(message)
-      config = ActionMailerX509.get_configuration(x509_configuration)
-      raise Exception.new('Configuration is nil') unless config
-      @coded = config.get_crypter.encode(message.content) if configuration.crypt_require?
-      @signed = config.get_signer.sign(@coded || message.content) if configuration.sign_require?
+      raise Exception.new('Configuration is nil') unless configuration
+      @coded = configuration.get_crypter.encode(message.content) if configuration.crypt_require?
+      @signed = configuration.get_signer.sign(@coded || message.content) if configuration.sign_require?
 
       p = Mail.new(@signed || @coded)
       p.header.fields.each {|field| (message.header[field.name] = field.value)}
