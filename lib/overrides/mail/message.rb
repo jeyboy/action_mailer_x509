@@ -25,37 +25,42 @@ module Mail #:nodoc:
     #end
 
     def content
-      parts.empty? ? Mail::Part.new(body.encoded).encoded : body.encoded
+      parts.empty? ? to_part : body.encoded
     end
 
     protected
+      def to_part
+        part = Mail::Part.new((text = body.encoded))
+        part.header[:content_type] = 'text/html' if text.index(/<\w+>/)
+        part.patched_encoded
+      end
 
-    def valid?
-      header['Content-Type'].present? && body.encoded.length > 0
-    end
+      def valid?
+        header['Content-Type'].present? && body.encoded.length > 0
+      end
 
-    #PATCH: body.encoded return wrong result in encoded func
-    def patched_encoded
-      buffer = header.encoded
-      buffer << "\r\n"
-      buffer << body.to_s
-      buffer
-    end
+      #PATCH: body.encoded return wrong result in encoded func
+      def patched_encoded
+        buffer = header.encoded
+        buffer << "\r\n"
+        buffer << body.to_s
+        buffer
+      end
 
-    def is_crypted?
-      (header['Content-Type'].encoded =~ /application\/x-pkcs[0-9]+-mime/).present?
-    end
+      def is_crypted?
+        (header['Content-Type'].encoded =~ /application\/x-pkcs[0-9]+-mime/).present?
+      end
 
-    def is_signed?
-      check_parts || check_body
-    end
+      def is_signed?
+        check_parts || check_body
+      end
 
-    def check_parts
-      (parts.first.body.to_s == 'This is an S/MIME signed message') rescue false
-    end
+      def check_parts
+        (parts.first.body.to_s == 'This is an S/MIME signed message') rescue false
+      end
 
-    def check_body
-      (body.to_s =~ /This is an S\/MIME signed message/).present?
-    end
+      def check_body
+        (body.to_s =~ /This is an S\/MIME signed message/).present?
+      end
   end
 end

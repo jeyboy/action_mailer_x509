@@ -1,4 +1,5 @@
 require 'action_mailer_x509'
+
 class Notifier < ActionMailer::Base #:nodoc:
   x509_configuration :test
   self.prepend_view_path("#{File.dirname(__FILE__)}/../views/")

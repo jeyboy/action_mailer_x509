@@ -1,9 +1,9 @@
 require 'rubygems'
 require 'test/unit'
-require 'helper'
-require_relative '../init'
+require_relative 'helper'
+require_relative '../../init'
 
-class ActionmailerX509Test < Test::Unit::TestCase #:nodoc:
+class ActionMailerX509Test < Test::Unit::TestCase #:nodoc:
   # If we want to encrypt a message, verify a signature is attached
   def test_signed_and_crypted
     root = File.dirname(File.expand_path(__FILE__)) + '/../' + 'lib/certs/'

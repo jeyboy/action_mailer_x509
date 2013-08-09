@@ -130,17 +130,17 @@ namespace :action_mailer_x509 do
       }
       add_config(true)
       x.report("#{n} mails with signature: ".ljust(40)) {
-        n.times { Notifier.fufu_signed('<destination@foobar.com>', '<demo@foobar.com>') }
+        n.times { Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>') }
       }
 
       add_config(false, true)
       x.report("#{n} crypted mails: ".ljust(40)) {
-        n.times { Notifier.fufu_crypted('<destination@foobar.com>', '<demo@foobar.com>') }
+        n.times { Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>') }
       }
 
       add_config
       x.report("#{n} crypted and signed mails: ".ljust(40)) {
-        n.times { Notifier.fufu_signed_and_crypted('<destination@foobar.com>', '<demo@foobar.com>') }
+        n.times { Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>') }
       }
     end
   end

@@ -27,7 +27,7 @@ unless defined?(ActiveRecord)
    require 'action_mailer'
 
 #  ActiveSupport::Dependencies.autoload_paths.unshift "#{plugin_root}/lib"
-   require plugin_root + '/lib/models/notifier'
+   require_relative '../models/notifier'
 end
 
 ActionMailer::Base.smtp_settings = {
