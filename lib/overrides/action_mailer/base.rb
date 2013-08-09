@@ -23,23 +23,23 @@ module ActionMailer #:nodoc:
     end
 
     private
-    # X509 SMIME signing and\or crypting
-    def x509_smime(message)
-      raise Exception.new('Configuration is nil') unless configuration
-      @coded = configuration.get_crypter.encode(message.content) if configuration.crypt_require?
-      @signed = configuration.get_signer.sign(@coded || message.content) if configuration.sign_require?
+      # X509 SMIME signing and\or crypting
+      def x509_smime(message)
+        raise Exception.new('Configuration is nil') unless configuration
+        @coded = configuration.get_crypter.encode(message.content) if configuration.crypt_require?
+        @signed = configuration.get_signer.sign(@coded || message.content) if configuration.sign_require?
 
-      p = Mail.new(@signed || @coded)
-      p.header.fields.each {|field| (message.header[field.name] = field.value)}
+        p = Mail.new(@signed || @coded)
+        p.header.fields.each {|field| (message.header[field.name] = field.value)}
 
-      if @signed
-        message.instance_variable_set :@body_raw, p.body.to_s
-      else
-        #PATCH: header field 'Content-Transfer-Encoding' is not copied by the some mystic reasons
-        message.header['Content-Transfer-Encoding'] = 'base64'
-        message.instance_variable_set :@body_raw, Base64.encode64(p.body.to_s)
+        if @signed
+          message.instance_variable_set :@body_raw, p.body.to_s
+        else
+          #PATCH: header field 'Content-Transfer-Encoding' is not copied by the some mystic reasons
+          message.header['Content-Transfer-Encoding'] = 'base64'
+          message.instance_variable_set :@body_raw, Base64.encode64(p.body.to_s)
+        end
+        message
       end
-      message
-    end
   end
 end

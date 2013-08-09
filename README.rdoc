@@ -103,19 +103,36 @@ If you set configuration as nil in "proceed" func, "ActionMailerX509.default_con
 
 You can benchmark the plugin with:
 
-  rake actionmailer_x509:performance_test
+  rake action_mailer_x509:performance_test
 
 Send yourself a signed email with:
 
-  rake actionmailer_x509:send_test
+  rake action_mailer_x509:send_test
 
 Verify the gem which generates valid signature
 
-  rake actionmailer_x509:verify_signature
+  rake action_mailer_x509:verify_signature
 
 Generate a signed email in a local file
 
-  rake actionmailer_x509:generate_mail
+  rake action_mailer_x509:generate_mail
+
+Generates a crypted mail in a file
+
+  rake action_mailer_x509:generate_crypted_mail
+
+Verify the gem which generates valid encrypted mail
+
+  rake action_mailer_x509:verify_crypt
+
+Check if crypt text is valid by openssl
+
+  rake action_mailer_x509:verify_crypt_by_openssl
+
+Check sign and crypt
+
+  rake action_mailer_x509:verify_sign_and_crypt
+
 
 == REQUIREMENTS
 
