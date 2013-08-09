@@ -86,7 +86,7 @@ namespace :action_mailer_x509 do
     mail = Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>')
 
     decrypted = mail.proceed(Notifier.x509_configuration)
-    puts "Crypt verification is #{decrypted.to_s == raw_mail.content}"
+    puts "Crypt verification is #{decrypted.to_s == raw_mail.body.decoded}"
   end
 
   desc 'Check if crypt text is valid by openssl.'
@@ -115,7 +115,7 @@ namespace :action_mailer_x509 do
     mail = Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>')
 
     decrypted = mail.proceed(Notifier.x509_configuration)
-    puts "Verification is #{decrypted.to_s == raw_mail.content}"
+    puts "Verification is #{decrypted.to_s == raw_mail.body.decoded}"
   end
 
   desc 'Performance test.'

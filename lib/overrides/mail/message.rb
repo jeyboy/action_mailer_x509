@@ -14,8 +14,11 @@ module Mail #:nodoc:
         end || result
       elsif is_crypted?
         raise Exception.new('Configuration is nil') unless config
-        config.get_crypter.decode(body.to_s)
-      end || body.encoded
+        result = config.get_crypter.decode(body.to_s)
+        if result && (mail = Mail.new(result)).valid?
+          mail.proceed(configuration)
+        end || result
+      end || body.decoded
     end
 
     #def method_missing(name, *args, &block)
