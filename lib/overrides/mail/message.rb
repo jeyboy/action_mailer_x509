@@ -30,9 +30,9 @@ module Mail #:nodoc:
 
     protected
       def to_part
-        part = Mail::Part.new((text = body.encoded))
+        part = Mail::Part.new((text = body.encoded).force_encoding('koi8-r'))
         part.header[:content_type] = 'text/html' if text.index(/<\w+>/)
-        part.patched_encoded
+        part.encoded #patched_encoded.force_encoding('koi8-r')
       end
 
       def valid?
