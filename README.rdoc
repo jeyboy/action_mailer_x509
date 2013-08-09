@@ -101,7 +101,7 @@ If you set configuration as nil in "proceed" func, "ActionMailerX509.default_con
 
 == USING TEST
 
-You can benchmark the plugin with:
+You can benchmark the gem with:
 
   rake action_mailer_x509:performance_test
 
