@@ -42,7 +42,7 @@ namespace :action_mailer_x509 do
     mail = Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>')
 
     verified = mail.proceed(Notifier.x509_configuration)
-    puts "Verification is #{verified.to_s == raw_mail.content}"
+    puts "Verification is #{set_format(verified) == raw_mail.body.to_s}"
   end
 
   desc 'Check if signature is valid by openssl.'
@@ -147,6 +147,10 @@ namespace :action_mailer_x509 do
 end
 
 private
+def set_format(text)
+  text.gsub("\r\n", "\n")
+end
+
 def add_config(sign = true, crypt = true)
   ActionMailerX509.add_configuration :test,
                            {

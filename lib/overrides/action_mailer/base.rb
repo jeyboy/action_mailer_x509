@@ -27,7 +27,6 @@ module ActionMailer #:nodoc:
     def x509_smime(message)
       config = ActionMailerX509.get_configuration(x509_configuration)
       raise Exception.new('Configuration is nil') unless config
-
       @coded = config.get_crypter.encode(message.content) if configuration.crypt_require?
       @signed = config.get_signer.sign(@coded || message.content) if configuration.sign_require?
 

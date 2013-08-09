@@ -37,10 +37,6 @@ module ActionMailerX509
     end
 
     protected
-      def set_format(text)
-        text.gsub("\r\n", ActionMailerX509.newline_sequence)
-      end
-
       def write(pcks7)
         OpenSSL::PKCS7::write_smime pcks7
       end
