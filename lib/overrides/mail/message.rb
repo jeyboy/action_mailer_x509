@@ -46,9 +46,9 @@ module Mail #:nodoc:
       end
 
       def to_part
-        part = Mail::Part.new((text = body.encoded).force_encoding('koi8-r'))
+        part = Mail::Part.new((text = body.encoded))
         part.header[:content_type] = 'text/html' if text.index(/<\w+>/)
-        #part.header['Content-Transfer-Encoding'] = 'base64'
+        part.header['Content-Transfer-Encoding'] = '8bit'
         part.encoded
       end
 
