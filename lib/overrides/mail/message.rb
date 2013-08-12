@@ -21,21 +21,35 @@ module Mail #:nodoc:
       end || body.decoded
     end
 
-    #def method_missing(name, *args, &block)
-    #  if name =~ /_as_utf8\z/
-    #    self.send(name.to(name.length - 8), args).force_encoding('UTF-8') rescue ''
-    #  end
-    #end
+    def method_missing(name, *args, &block)
+      elems = name.to_s.split('_as_')
+
+      if elems.size == 2
+        result = self.send(elems.first.to_sym, *args)
+        if result.is_a? String
+          convert(result, elems.last)
+        elsif result.respond_to? :to_a
+          result.to_a.map {|item| convert(item.to_s, elems.last)}
+        else
+          convert(result.to_s, elems.last)
+        end
+      end
+    end
 
     def content
       parts.empty? ? to_part : body.encoded
     end
 
     protected
+      def convert(text, encoding)
+        text.force_encoding(encoding.dasherize)
+      end
+
       def to_part
         part = Mail::Part.new((text = body.encoded).force_encoding('koi8-r'))
         part.header[:content_type] = 'text/html' if text.index(/<\w+>/)
-        part.encoded #patched_encoded.force_encoding('koi8-r')
+        #part.header['Content-Transfer-Encoding'] = 'base64'
+        part.encoded
       end
 
       def valid?
