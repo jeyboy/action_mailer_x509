@@ -41,7 +41,7 @@ module Mail #:nodoc:
       def decode_body
         unless parts.present?
           # we need manually split body on parts and decode each part separate
-          body.decode
+          body.decoded
         else
           # usually mail wrongly parse email and dont split it by parts
         end
