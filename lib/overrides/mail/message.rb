@@ -5,16 +5,13 @@ module Mail #:nodoc:
     def proceed(configuration = nil)
       config = ActionMailerX509.get_configuration(configuration)
 
-      if is_signed?
+      if (signed = is_signed?) || is_crypted?
         raise Exception.new('Configuration is nil') unless config
-        # call patched_encoded
-        result = config.get_signer.verify(patched_encoded)
-        if result && (mail = Mail.new(result)).valid?
-          mail.proceed(configuration)
-        end || result
-      elsif is_crypted?
-        raise Exception.new('Configuration is nil') unless config
-        result = config.get_crypter.decode(body.to_s)
+        result = if signed
+                   config.get_signer.verify(patched_encoded)
+                 else
+                   config.get_crypter.decode(body.to_s)
+                 end
         if result && (mail = Mail.new(result)).valid?
           mail.proceed(configuration)
         end || result
