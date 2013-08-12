@@ -65,11 +65,11 @@ module Mail #:nodoc:
       end
 
       def is_crypted?
-        (header['Content-Type'].encoded =~ /application\/x-pkcs[0-9]+-mime/).present?
+        (header['Content-Type'].encoded =~ /application\/(x-)?pkcs[0-9]+-mime/).present?
       end
 
       def is_signed?
-        (header['Content-Type'].encoded =~ /application\/x-pkcs[0-9]+-signature/).present?
+        (header['Content-Type'].encoded =~ /application\/(x-)?pkcs[0-9]+-signature/).present?
       end
   end
 end
