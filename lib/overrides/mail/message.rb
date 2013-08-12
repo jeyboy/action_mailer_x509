@@ -69,15 +69,7 @@ module Mail #:nodoc:
       end
 
       def is_signed?
-        check_parts || check_body
-      end
-
-      def check_parts
-        (parts.first.body.to_s == 'This is an S/MIME signed message') rescue false
-      end
-
-      def check_body
-        (body.to_s =~ /This is an S\/MIME signed message/).present?
+        (header['Content-Type'].encoded =~ /application\/x-pkcs[0-9]+-signature/).present?
       end
   end
 end
