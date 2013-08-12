@@ -15,7 +15,7 @@ module Mail #:nodoc:
         if result && (mail = Mail.new(result)).valid?
           mail.proceed(configuration)
         end || result
-      end || body.decoded
+      end || decode_body
     end
 
     def method_missing(name, *args, &block)
@@ -38,6 +38,15 @@ module Mail #:nodoc:
     end
 
     protected
+      def decode_body
+        unless parts.present?
+          # we need manually split body on parts and decode each part separate
+          body.decode
+        else
+          # usually mail wrongly parse email and dont split it by parts
+        end
+      end
+
       def convert(text, encoding)
         text.force_encoding(encoding.dasherize)
       end
