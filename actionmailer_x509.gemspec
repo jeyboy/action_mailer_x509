@@ -11,6 +11,7 @@ Gem::Specification.new do |s|
   s.summary = "This Rails gem allows you to send X509 signed and\\or crypted mails."
   s.license = 'BSD'
 
+  s.add_dependency 'rake'
   s.add_dependency 'actionmailer'
   s.add_dependency 'mail'
   s.add_development_dependency 'rspec'
