@@ -175,7 +175,7 @@ readable.
 Gem was done by Jenua Boiko <jeyboy1985@gmail.com>.
 Inspired by gem of petRUShka[https://github.com/petRUShka]
 
-Special thanks to Ekaterina kiote[https://github.com/kiote] Krivich.
+Special thanks to Ekaterina Krivich[https://github.com/kiote].
 
 This code is under the BSD license.
 
