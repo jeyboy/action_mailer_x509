@@ -1,3 +1,5 @@
+https://travis-ci.org/jeyboy/action_mailer_x509.png?branch=master
+
 = ActionmailerX509
 
 Allows you to send X509 signed and/or crypted mails for Ruby on Rails. Also my you possibility verify and decrypt X509 signed and/or crypted mails.
