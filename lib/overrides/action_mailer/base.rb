@@ -1,5 +1,4 @@
 require 'action_mailer_x509'
-require 'action_mailer/base'
 
 module ActionMailer #:nodoc:
   class Base #:nodoc:

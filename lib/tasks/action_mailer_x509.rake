@@ -164,10 +164,6 @@ namespace :action_mailer_x509 do
 end
 
 private
-def set_format(text)
-  text.gsub("\r\n", "\n")
-end
-
 def add_config(sign = true, crypt = true)
   ActionMailerX509.add_configuration :test,
                            {
