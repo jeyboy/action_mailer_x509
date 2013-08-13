@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/jeyboy/action_mailer_x509.png?branch=master)](https://travis-ci.org/jeyboy/action_mailer_x509)
+!https://travis-ci.org/jeyboy/action_mailer_x509.png?branch=master!:https://travis-ci.org/jeyboy/action_mailer_x509
 
 = ActionmailerX509
 
