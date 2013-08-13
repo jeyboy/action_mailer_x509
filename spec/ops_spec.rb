@@ -64,18 +64,36 @@ describe 'Test basic functions' do
     end
 
     describe 'incorrect text' do
-      it 'sign incorrect text' do
+      it 'sign' do
         add_config(true, false)
         mail = Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>')
         mail.body = mail.body.to_s.gsub(/[0-9]/, 'g')
         -> { mail.proceed(Notifier.x509_configuration) }.should raise_error VerificationError
       end
 
-      it 'crypt incorrect text' do
+      it 'crypt' do
         add_config(false, true)
         mail = Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>')
         mail.body = mail.body.to_s.gsub(/[0-9]/, 'g')
         -> { mail.proceed(Notifier.x509_configuration) }.should raise_error DecodeError
+      end
+    end
+
+    describe 'incorrect certs' do
+      it 'sign' do
+        add_config(true, false)
+        set_config_param(crypt_cert: 'cert.crt',
+                         crypt_key: 'cert.key')
+        mail = Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>')
+        mail.body = mail.body.to_s.gsub(/[0-9]/, 'g')
+        -> { mail.proceed(Notifier.x509_configuration) }.should raise_error VerificationError
+      end
+
+      it 'crypt' do
+        add_config(false, true)
+        set_config_param(crypt_cert: 'cert.crt',
+                         crypt_key: 'cert.key')
+        -> { Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>') }.should raise_error OpenSSL::PKey::RSAError
       end
     end
   end
