@@ -2,26 +2,42 @@ require 'spec_helper'
 
 describe 'Test basic functions' do
   describe 'Correct' do
-    it 'Signature' do
-      add_config(false, false)
-      raw_mail = Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>')
+    describe 'Signature' do
+      before do
+        add_config(false, false)
+        @raw_mail = Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>')
 
-      add_config(true, false)
-      mail = Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>')
+        add_config(true, false)
+        @mail = Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>')
+      end
 
-      verified = mail.proceed(Notifier.x509_configuration)
-      verified.should eql raw_mail.body.to_s
+      it 'Must generate signature' do
+        @mail.body.to_s.should_not eql @raw_mail.body.to_s
+      end
+
+      it 'Verification check' do
+        verified = @mail.proceed(Notifier.x509_configuration)
+        verified.should eql @raw_mail.body.to_s
+      end
     end
 
-    it 'Crypting' do
-      add_config(false, false)
-      raw_mail = Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>')
+    describe 'Crypting' do
+      before do
+        add_config(false, false)
+        @raw_mail = Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>')
 
-      add_config(false, true)
-      mail = Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>')
+        add_config(false, true)
+        @mail = Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>')
+      end
 
-      decrypted = mail.proceed(Notifier.x509_configuration)
-      decrypted.to_s.should eql raw_mail.body.decoded
+      it 'Must generate crypted text' do
+        @mail.body.decoded.should_not eql @raw_mail.body.decoded
+      end
+
+      it 'Must generate crypted text' do
+        decrypted = @mail.proceed(Notifier.x509_configuration)
+        decrypted.to_s.should eql @raw_mail.body.decoded
+      end
     end
 
     it 'Crypting and Signature' do
@@ -37,6 +53,30 @@ describe 'Test basic functions' do
   end
 
   describe 'Incorrect' do
+    it 'sign incorrect key' do
+      add_config(true, false)
 
+      mail = Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>')
+      mail.body.to_s.should_not be_empty
+
+      set_config_param(sign_passphrase: 'wrong')
+      -> { mail.proceed(Notifier.x509_configuration) }.should raise_error OpenSSL::PKey::RSAError
+    end
+
+    describe 'incorrect text' do
+      it 'sign incorrect text' do
+        add_config(true, false)
+        mail = Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>')
+        mail.body = mail.body.to_s.gsub(/[0-9]/, 'g')
+        -> { mail.proceed(Notifier.x509_configuration) }.should raise_error VerificationError
+      end
+
+      it 'crypt incorrect text' do
+        add_config(false, true)
+        mail = Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>')
+        mail.body = mail.body.to_s.gsub(/[0-9]/, 'g')
+        -> { mail.proceed(Notifier.x509_configuration) }.should raise_error DecodeError
+      end
+    end
   end
 end

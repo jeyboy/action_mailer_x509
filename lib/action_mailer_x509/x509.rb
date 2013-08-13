@@ -1,5 +1,8 @@
 require 'openssl'
 
+class DecodeError < Exception; end
+class VerificationError < Exception; end
+
 module ActionMailerX509
   class X509
     attr_accessor :certificate, :cipher, :rsa_key, :certificate_store
@@ -21,8 +24,8 @@ module ActionMailerX509
     def decode(encrypted_text)
       pkcs7 = read(encrypted_text)
       pkcs7.decrypt(@rsa_key, certificate)
-    rescue
-      nil
+    rescue => e
+      raise DecodeError.new(e.message)
     end
 
     def sign(text)
@@ -33,7 +36,9 @@ module ActionMailerX509
     def verify(text)
       result = read(text).verify(nil, @certificate_store, nil, nil)
       #read(text).verify(nil, @certificate_store, nil, OpenSSL::PKCS7::NOVERIFY)
-      result ? read(text).data : nil
+      result ? read(text).data : raise(VerificationError.new('Wrong args'))
+    rescue => e
+      raise VerificationError.new(e.message)
     end
 
     protected
