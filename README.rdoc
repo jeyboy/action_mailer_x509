@@ -59,7 +59,7 @@ First for all - run install generator, which adds configuration file
 
     rails g action_mailer_x509:install
 
-After the process, add base configurations for emails processing
+After the process, add base configurations for emails processing in '/config/initializers/x509_settings'
 
   config.add_configuration :demo,
                            {
@@ -84,7 +84,7 @@ and set default configuration
 
   config.default_configuration = :hisp
 
-You may also add the configurations dynamically.
+You may also add the configurations dynamically in any place.
 
 And you may also change the default configuration in any place of the program:
 
@@ -98,8 +98,29 @@ And you may also change the default configuration in any place of the program:
 
 If you set configuration as nil in "proceed" func, "ActionMailerX509.default_configuration" will be used.
 
+== HELPERS
+
+You may use some helpers for fast encoding in case when you proceed received email. Helper has the following signature:
+
+   method_name_as_new_encoding
+
+For example:
+
+   mail = Mail.new(raw_email)
+   mail.body                => return body in default encoding
+   mail.body_as_koi8_r      => return body in koi8-r encoding
 
 == USING TEST
+
+You mau use rspec tests by command
+
+   bundle exec rake
+
+or use next rake tests:
+
+Start all main tests
+
+  rake action_mailer_x509:all
 
 You can benchmark the gem with:
 
@@ -133,11 +154,10 @@ Check sign and crypt
 
   rake action_mailer_x509:verify_sign_and_crypt
 
-
 == REQUIREMENTS
 
- * Ruby 1.8 or later
- * Rails 3.0 or later
+ * Ruby 1.9 or later (Ruby 1.8 is not tested)
+ * Rails 3.2 or later (All other versions are not tested)
  * OpenSSL 0.9.8e or later and Ruby/OpenSSL 1.8.6.36 or later
 
 == Mail User Agent tested
@@ -145,7 +165,7 @@ Check sign and crypt
 We checked with the following MUA for making sure the signed mails are
 readable.
 
- * Thunderbird 5.0: OK
+ * Thunderbird 15.0: OK
  * Apple Mail.app: OK
  * Google Mail: A file smime.p7s appears as attachment
  * Google Mail + Penango: OK
@@ -153,9 +173,9 @@ readable.
 == AUTHORS
 
 Gem was done by Jenua Boiko <jeyboy1985@gmail.com>.
+Inspired by gem of petRUShka[https://github.com/petRUShka]
 
-Special thanks to Krivich Ekaterina[https://github.com/kiote].
-Inspired by petRUShka[https://github.com/petRUShka]
+Special thanks to 'Krivich Ekaterina'[https://github.com/kiote].
 
 This code is under the BSD license.
 
