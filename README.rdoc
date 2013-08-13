@@ -155,6 +155,7 @@ readable.
 Gem was done by Jenua Boiko <jeyboy1985@gmail.com>.
 
 Special thanks to Krivich Ekaterina[https://github.com/kiote].
+Inspired by petRUShka[https://github.com/petRUShka]
 
 This code is under the BSD license.
 
