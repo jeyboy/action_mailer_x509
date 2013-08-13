@@ -14,6 +14,6 @@ Gem::Specification.new do |s|
   s.add_dependency 'rake'
   s.add_dependency 'actionmailer'
   s.add_dependency 'mail'
-  s.add_development_dependency 'rspec'
+  #s.add_development_dependency 'rspec'
 end
 
