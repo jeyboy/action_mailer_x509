@@ -107,5 +107,23 @@ describe 'Test basic functions' do
         -> { Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>') }.should raise_error OpenSSL::PKey::RSAError
       end
     end
+
+    describe 'valid func' do
+      it 'must return true on non crypted and not signed' do
+        add_config(false, false)
+        get_config.valid?.should eql true
+      end
+
+      it 'must return false on wrong passphrase' do
+        add_config
+        set_config_param(sign_passphrase: 'wrong')
+        get_config.valid?.should eql false
+      end
+
+      it 'must return false on wrong certificate' do
+        add_usual_cert_as_p12_config
+        get_config.valid?.should eql false
+      end
+    end
   end
 end

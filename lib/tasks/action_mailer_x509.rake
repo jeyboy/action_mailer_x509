@@ -169,12 +169,9 @@ def add_config(sign = true, crypt = true)
                            {
                                sign_enable: sign,
                                crypt_enable: crypt,
-                               sign_cert: 'ca.crt',
-                               sign_key: 'ca.key',
-                               sign_passphrase: 'hisp',
-                               crypt_cert: 'ca.crt',
-                               crypt_key: 'ca.key',
-                               crypt_passphrase: 'hisp',
+                               cert: 'ca.crt',
+                               key: 'ca.key',
+                               passphrase: 'hisp',
                                certs_path: Rails.root.join('certs')
                            }
 end
