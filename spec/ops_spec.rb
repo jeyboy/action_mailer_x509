@@ -50,6 +50,17 @@ describe 'Test basic functions' do
       decrypted = mail.proceed(Notifier.x509_configuration)
       decrypted.to_s.should eql raw_mail.body.decoded
     end
+
+    it 'Crypting and Signature by p12_certificate' do
+      add_config(false, false)
+      raw_mail = Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>')
+
+      add_config(true, true, true)
+      mail = Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>')
+
+      decrypted = mail.proceed(Notifier.x509_configuration)
+      decrypted.to_s.should eql raw_mail.body.decoded
+    end
   end
 
   describe 'Incorrect' do

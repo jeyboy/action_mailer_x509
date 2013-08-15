@@ -10,6 +10,8 @@ module ActionMailerX509
 
   mattr_accessor :default_configuration
 
+  mattr_accessor :default_certs_path
+
   class << self
     def settings
       yield self
@@ -25,6 +27,10 @@ module ActionMailerX509
 
     def get_configuration(name)
       configurations[(name || ActionMailerX509.default_configuration).to_sym]
+    end
+
+    def default_certs_path=(path)
+      @@default_certs_path = Pathname.new(path)
     end
   end
 end

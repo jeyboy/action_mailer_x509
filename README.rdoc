@@ -49,6 +49,30 @@ the following commands.
 Please note the -nodes to leave the private key uncrypted, use -des if you wish
 to protect it.
 
+== Common way to connect your certificates
+
+A lot of mailer apps has the same procedure of certificate inclusion which include next steps :
+
+    (1) Open the Preferences.
+    (2) Go to Advanced and open the Certificates tab. Click on View Certificates.
+    (3) Select the Your Certificates tab and click on Import. Browse the .p12 file you created and hit Open. Every time you import a certificate, you will need to give the export passphrase you specified when you created the .p12 document.
+    (4) Next, go to the Servers tab and click Import again. Here, browse the .crt file belonging to your certificate (there are two if you created a certificate authority).
+    (5) Still on the same tab, select the newly imported entry and click Edit.
+    (6) Select Trust the authenticity of this certificate and click Edit CA Trust.
+
+You only need to do the next step if you created a CA.
+
+    (1) Go to the Authorities tab and hit Import.
+    (2) Now select the .crt file belonging to your certificate authority and hit Open. You will then be asked how far you want to trust the certificate authority. After pressing OK the created CA will be listed on the tab.
+
+For Mac OS procedure has some differences:
+
+    To use your certificate on Mac, import the certificate into Keychain Access on that Mac. Double-click the certificate
+    file. If Keychain Access can’t import the certificate, drag the file onto the Keychain Access icon in Finder.
+    If you still can’t import the certificate, the certificate may have expired or may be invalid. You can verify whether
+    your certificate is successfully installed if it appears in the My Certificates category in Keychain Access.
+    Open your certificate in Keychain Access and make sure its trust setting is “Use System Defaults” or “Always Trust.”
+
 == INSTALLING
 
 Put this line in your Gemfile
