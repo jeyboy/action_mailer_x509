@@ -82,18 +82,20 @@ class Configuration
   end
 
   def get_certificate_info
-    if sign_require? || crypt_require?
-      worker = sign_require? ? get_signer : get_crypter
+    if valid?
+      if sign_require? || crypt_require?
+        worker = sign_require? ? get_signer : get_crypter
 
-      subject_attrs = worker.subject.to_a
-      subject_attrs = subject_attrs.each_with_object({}) do |attr, obj|
-        obj.update(ATTRS[attr.first], attr[1])
-      end
+        subject_attrs = worker.certificate.subject.to_a
+        subject_attrs = subject_attrs.each_with_object({}) do |attr, obj|
+          obj.update(ATTRS[attr.first] => attr[1])
+        end
 
-      {
-        from: worker.certificate.not_before,
-        to: worker.certificate.not_after,
-      }.reverse_merge!(subject_attrs)
+        {
+          from: worker.certificate.not_before,
+          to: worker.certificate.not_after,
+        }.reverse_merge!(subject_attrs)
+      end || {}
     end || {}
   end
 

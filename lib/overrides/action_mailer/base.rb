@@ -18,14 +18,15 @@ module ActionMailer #:nodoc:
     end
 
     def mail(headers = {}, &block)
+      self.class.x509_configuration(headers.delete(:x509_configuration)) if headers[:x509_configuration]
       message = old_mail(headers, &block)
-      x509_smime(message) if configuration.sign_require? || configuration.crypt_require?
+      x509_smime(message) if configuration && (configuration.sign_require? || configuration.crypt_require?)
     end
 
     private
       # X509 SMIME signing and\or crypting
       def x509_smime(message)
-        raise Exception.new('Configuration is nil') unless configuration
+        #raise Exception.new('Configuration is nil') unless configuration
         @coded = configuration.get_crypter.encode(message.content) if configuration.crypt_require?
         @signed = configuration.get_signer.sign(@coded || message.content) if configuration.sign_require?
 
