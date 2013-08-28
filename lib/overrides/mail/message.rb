@@ -2,7 +2,7 @@ require 'action_mailer_x509'
 
 module Mail #:nodoc:
   class Message #:nodoc:
-    def proceed(configuration = nil)
+    def proceed(result_type = nil, configuration = nil)
       config = ActionMailerX509.get_configuration(configuration)
 
       if (signed = is_signed?) || is_crypted?
@@ -15,7 +15,7 @@ module Mail #:nodoc:
         if result && (mail = Mail.new(result)).valid?
           mail.proceed(configuration)
         end || result
-      end || decode_body
+      end || decode_body(result_type)
     end
 
     def method_missing(name, *args, &block)
@@ -37,18 +37,26 @@ module Mail #:nodoc:
       parts.empty? ? to_part : body.encoded
     end
 
-    # Returns true if the message is a multipart/alternative
-    def multipart_alternative?
-      multipart? && sub_type.downcase == 'alternative'
-    end
-
     protected
-      def proceed_parts(type = 'text')
+      # Returns true if the message is a multipart/alternative
+      def multipart_alternative?(part)
+        part.multipart? && part.sub_type.downcase == 'alternative'
+      end
+
+    #need testing
+      def proceed_part(part, result_type)
         #TODO: add body building for alternative type mails
+        if multipart_alternative?(part)
+          variants = part.parts.each_with_object({}) {|p, res| res.update(p.sub_type => p)}
+          new_part = variants[result_type] || variants['html'] || variants['text'] || part.first
+          proceed_part(new_part, result_type)
+        else
+          part.decoded
+        end
       end
 
     # we need manually split body on parts and decode each part separate
-      def decode_body
+      def decode_body(result_type)
         body.split(boundary) if parts.blank? && boundary.present?
 
         if parts.present?
