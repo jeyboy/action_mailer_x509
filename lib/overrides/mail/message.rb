@@ -2,7 +2,7 @@ require 'action_mailer_x509'
 
 module Mail #:nodoc:
   class Message #:nodoc:
-    def proceed(result_type = nil, configuration = nil)
+    def proceed(result_type = 'html', configuration = nil)
       config = ActionMailerX509.get_configuration(configuration)
 
       if (signed = is_signed?) || is_crypted?
@@ -15,7 +15,7 @@ module Mail #:nodoc:
         if result && (mail = Mail.new(result)).valid?
           mail.proceed(configuration)
         end || result
-      end || decode_body(result_type)
+      end || proceed_part(self, result_type)
     end
 
     def method_missing(name, *args, &block)
@@ -44,26 +44,32 @@ module Mail #:nodoc:
       end
 
     #need testing
-      def proceed_part(part, result_type)
-        #TODO: add body building for alternative type mails
-        if multipart_alternative?(part)
-          variants = part.parts.each_with_object({}) {|p, res| res.update(p.sub_type => p)}
-          new_part = variants[result_type] || variants['html'] || variants['text'] || part.first
-          proceed_part(new_part, result_type)
+      def proceed_part(part, result_type = 'html')
+        if part.multipart?
+          if multipart_alternative?(part)
+            variants = part.parts.each_with_object({}) {|p, res| res.update(p.sub_type => p)}
+            @new_part = variants[result_type] || variants['html'] || variants['plain'] || part.first
+          end
+
+          _decode_body(result_type, @new_part || part)
         else
-          part.decoded
+          part.decoded.to_s unless part.attachment?
         end
       end
 
     # we need manually split body on parts and decode each part separate
-      def decode_body(result_type)
-        body.split(boundary) if parts.blank? && boundary.present?
+      def _decode_body(result_type, obj = self)
+        obj.body.split(obj.boundary) if obj.parts.blank? && obj.boundary.present?
 
-        if parts.present?
-          parts.map {|part| part.decoded}
+        if obj.parts.present?
+          obj.parts.map {|part| proceed_part(part, result_type)}.join(break_line(result_type))
         else
-          body.decoded
+          obj.body.decoded
         end
+      end
+
+      def break_line(content_type)
+        content_type == 'html' ? '<br>' : "\r\n"
       end
 
       def convert(text, encoding)
