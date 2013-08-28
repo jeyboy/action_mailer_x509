@@ -64,7 +64,7 @@ module Mail #:nodoc:
         if obj.parts.present?
           obj.parts.map {|part| proceed_part(part, result_type)}.join(break_line(result_type))
         else
-          obj.body.decoded
+          obj.decoded
         end
       end
 
