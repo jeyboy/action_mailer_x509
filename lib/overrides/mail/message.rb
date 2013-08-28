@@ -38,12 +38,14 @@ module Mail #:nodoc:
     end
 
     protected
+    # we need manually split body on parts and decode each part separate
       def decode_body
-        unless parts.present?
-          # we need manually split body on parts and decode each part separate
-          body.decoded
+        body.split(boundary) if parts.blank? && boundary.present?
+
+        if parts.present?
+          parts.map {|part| part.decoded}
         else
-          # usually mail wrongly parse email and dont split it by parts
+          body.decoded
         end
       end
 
