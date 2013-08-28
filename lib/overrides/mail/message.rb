@@ -37,7 +37,16 @@ module Mail #:nodoc:
       parts.empty? ? to_part : body.encoded
     end
 
+    # Returns true if the message is a multipart/alternative
+    def multipart_alternative?
+      multipart? && sub_type.downcase == 'alternative'
+    end
+
     protected
+      def proceed_parts(type = 'text')
+        #TODO: add body building for alternative type mails
+      end
+
     # we need manually split body on parts and decode each part separate
       def decode_body
         body.split(boundary) if parts.blank? && boundary.present?
