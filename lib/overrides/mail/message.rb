@@ -2,20 +2,9 @@ require 'action_mailer_x509'
 
 module Mail #:nodoc:
   class Message #:nodoc:
-    def proceed(result_type = 'html', configuration = nil)
-      config = ActionMailerX509.get_configuration(configuration)
 
-      if (signed = is_signed?) || is_crypted?
-        raise Exception.new('Configuration is nil') unless config
-        result = if signed
-                   config.get_signer.verify(patched_encoded)
-                 else
-                   config.get_crypter.decode(body.to_s)
-                 end
-        if result && (mail = Mail.new(result)).valid?
-          mail.proceed(configuration)
-        end || result
-      end || proceed_part(self, result_type)
+    def proceed(result_type = 'html', configuration = nil)
+      proceed_part(_proceed(configuration), result_type)
     end
 
     def method_missing(name, *args, &block)
@@ -39,14 +28,29 @@ module Mail #:nodoc:
 
     protected
       # Returns true if the message is a multipart/alternative
-      def multipart_alternative?(part)
-        part.multipart? && part.sub_type.downcase == 'alternative'
+      def alternative?(part)
+        part.sub_type.downcase == 'alternative'
       end
 
-    #need testing
+
+      def _proceed(configuration = nil)
+        config = ActionMailerX509.get_configuration(configuration)
+        if (signed = is_signed?) || is_crypted?
+          raise Exception.new('Configuration is nil') unless config
+          result = if signed
+                     config.get_signer.verify(patched_encoded)
+                   else
+                     config.get_crypter.decode(body.to_s)
+                   end
+          if result && (mail = Mail.new(result)).valid?
+            mail._proceed(configuration)
+          end || result
+        end || self
+      end
+
       def proceed_part(part, result_type = 'html')
         if part.multipart?
-          if multipart_alternative?(part)
+          if alternative?(part)
             variants = part.parts.each_with_object({}) {|p, res| res.update(p.sub_type => p)}
             @new_part = variants[result_type] || variants['html'] || variants['plain'] || part.first
           end
