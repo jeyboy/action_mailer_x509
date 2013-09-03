@@ -44,14 +44,13 @@ module ActionMailerX509
     end
 
     def sign(text)
-      write OpenSSL::PKCS7.sign(certificate, rsa_key, text, [], OpenSSL::PKCS7::DETACHED)
-      #OpenSSL::PKCS7.sign(certificate, rsa_key, text, [], OpenSSL::PKCS7::BINARY)
+      write OpenSSL::PKCS7.sign(certificate, rsa_key, text, [], OpenSSL::PKCS7::DETACHED|OpenSSL::PKCS7::BINARY)
     end
 
     def verify(text)
-      result = read(text).verify(nil, @certificate_store, nil, nil)
-      #read(text).verify(nil, @certificate_store, nil, OpenSSL::PKCS7::NOVERIFY)
-      result ? read(text).data : raise(VerificationError.new('Wrong args'))
+      #set the signer's certificates are not chain verified.
+      result = read(text).verify(nil, @certificate_store, nil, OpenSSL::PKCS7::NOVERIFY)
+      result ? read(text).data : raise(VerificationError.new('Verification failed !!!'))
     rescue => e
       raise VerificationError.new(e.message)
     end
