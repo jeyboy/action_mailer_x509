@@ -79,7 +79,7 @@ Put this line in your Gemfile
 
     gem 'actionmailer_x509'
 
-== USING
+== SETTINGS
 
 First for all - run install generator, which adds configuration file
 
@@ -120,9 +120,41 @@ And you may also change the default configuration in any place of the program:
 
 2) Change only for decoding and verifyng if you use Mail object
 
-   Mail.new(encoded_text).proceed(configuration)
+   Mail.new(encoded_text).proceed(result_type, configuration)
 
 If you set configuration as nil in "proceed" func, "ActionMailerX509.default_configuration" will be used.
+
+
+== USING
+
+Encoding/Sign
+
+  You may set simpy set configuration for all funcs of mailer 
+  
+  class SendCrypted < ActionMailer::Base
+    x509_configuration :test
+  end
+  
+  or set it how param of 'mail' func for each mailer method
+  
+  class SendCrypted < ActionMailer::Base
+    def prepare_mail(from, to, subject, body, x509_configuration = ActionMailerX509.default_configuration)
+      mail(
+          from: from,
+          to: to,
+          subject: subject,
+          x509_configuration: x509_configuration
+      )do |format|
+        #format.text { render text: body }
+        format.html { render text: body }
+      end
+    end
+  end
+  
+Decoding/Verify
+
+  Mail.new(encoded_mail).proceed(result_type, configuration)
+  
 
 == HELPERS
 
