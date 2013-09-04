@@ -3,6 +3,14 @@ require 'action_mailer_x509'
 module Mail #:nodoc:
   class Message #:nodoc:
 
+    #fix mail gem bug on decoding
+    def subject( val = nil )
+      val ||= header[:subject].default
+      val.gsub!(' ', '_') if val && val.start_with?('=?')
+      default( :subject, val )
+      header[:subject].default
+    end
+
     def proceed(result_type = 'html', configuration = nil)
       proceed_part(_proceed(configuration), result_type)
     end
