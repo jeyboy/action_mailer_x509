@@ -34,16 +34,11 @@ module Mail #:nodoc:
       parts.empty? ? to_part : body.encoded
     end
 
-    def is_crypted?
-      (header['Content-Type'].encoded =~ /application\/(x-)?pkcs[0-9]+-mime/).present?
-    rescue
-      false
-    end
-
-    def is_signed?
-      (header['Content-Type'].encoded =~ /application\/(x-)?pkcs[0-9]+-signature/).present?
-    rescue
-      false
+    def get_states
+      {
+          crypted: (body.to_s =~ /application\/(x-)?pkcs[0-9]+-mime/).present?,
+          signed: (body.to_s =~ /application\/(x-)?pkcs[0-9]+-signature/).present?
+      }
     end
 
     protected
@@ -119,6 +114,18 @@ module Mail #:nodoc:
         buffer << "\r\n"
         buffer << body.to_s
         buffer
+      end
+
+      def is_crypted?
+        (header['Content-Type'].encoded =~ /application\/(x-)?pkcs[0-9]+-mime/).present?
+      rescue
+        false
+      end
+
+      def is_signed?
+        (header['Content-Type'].encoded =~ /application\/(x-)?pkcs[0-9]+-signature/).present?
+      rescue
+        false
       end
   end
 end
