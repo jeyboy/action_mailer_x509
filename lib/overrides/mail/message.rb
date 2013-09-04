@@ -66,12 +66,13 @@ module Mail #:nodoc:
           _decode_body(result_type, @new_part || part)
         else
           part.decoded unless part.attachment?
-        end.to_s
-      end
+        end
+      end.to_s
 
     # we need manually split body on parts and decode each part separate
       def _decode_body(result_type, obj = self)
-        obj.body.split(obj.boundary) if obj.parts.blank? && obj.boundary.present?
+        obj.body.split!(obj.boundary) if obj.parts.blank? && obj.boundary.present?
+
 
         if obj.parts.present?
           proceed_parts = obj.parts.map {|part| proceed_part(part, result_type).force_encoding('utf-8')}
@@ -109,11 +110,15 @@ module Mail #:nodoc:
       end
 
       def is_crypted?
-        (header['Content-Type'].try(:encoded).to_s =~ /application\/(x-)?pkcs[0-9]+-mime/).present?
+        (header['Content-Type'].encoded =~ /application\/(x-)?pkcs[0-9]+-mime/).present?
+      rescue
+        false
       end
 
       def is_signed?
-        (header['Content-Type'].try(:encoded).to_s =~ /application\/(x-)?pkcs[0-9]+-signature/).present?
+        (header['Content-Type'].encoded =~ /application\/(x-)?pkcs[0-9]+-signature/).present?
+      rescue
+        false
       end
   end
 end
