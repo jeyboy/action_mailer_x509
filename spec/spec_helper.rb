@@ -4,6 +4,8 @@ require 'active_support/all'
 require 'action_mailer'
 require 'action_mailer_x509'
 require 'action_mailer_x509/x509'
+require 'action_mailer_x509/security_object'
+require 'action_mailer_x509/configuration'
 require 'models/notifier'
 
 RSpec.configure do |config|

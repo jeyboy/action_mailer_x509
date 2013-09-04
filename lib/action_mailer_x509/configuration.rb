@@ -1,12 +1,6 @@
-class Configuration
-  ATTRS = {     'C' => :country,
-                'ST' => :state,
-                'L' => :location,
-                'O' => :organization,
-                'OU' => :organizational_unit,
-                'CN' => :common_name,
-                'emailAddress' => :email}
+require 'action_mailer_x509/security_object'
 
+class Configuration
   def initialize(params = {})
     params.symbolize_keys!
     params.each_pair { |k, v| self.send("#{k}=".to_sym, v) }
@@ -88,7 +82,7 @@ class Configuration
 
         subject_attrs = worker.certificate.subject.to_a
         subject_attrs = subject_attrs.each_with_object({}) do |attr, obj|
-          obj.update(ATTRS[attr.first] => attr[1])
+          obj.update(SecurityObject::ATTRS[attr.first] => attr[1])
         end
 
         {
