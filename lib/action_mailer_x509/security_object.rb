@@ -27,7 +27,9 @@ class SecurityObject
       end
 
       def subject(params)
-        subject = (params || {}).each_with_object('') do |attr, obj|
+        params ||= {}
+        params.symbolize_keys!
+        subject = params.each_with_object('') do |attr, obj|
           obj << "/#{IATTRS[attr.first]}=#{attr[1]}"
         end
         OpenSSL::X509::Name.parse subject
