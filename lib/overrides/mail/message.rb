@@ -5,7 +5,7 @@ module Mail #:nodoc:
 
     #fix mail gem bug on decoding
     def subject( val = nil )
-      val ||= header[:subject].default
+      val ||= (header[:subject].default if header[:subject]) || ''
       val.gsub!(' ', '_') if val && val.start_with?('=?')
       default( :subject, val )
       header[:subject].default
