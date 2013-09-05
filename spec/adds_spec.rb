@@ -29,6 +29,37 @@ describe 'Test additional functions' do
           subject_settings[SecurityObject::ATTRS[attr.first]].should eql attr[1]
         end
       end
+
+      it 'Must generate p7 key with password' do
+        objs = SecurityObject.p7_self_signed_certificate(
+            :password => 'try_pass',
+            :pack_key_with_pass => true
+        )
+        key_bytes = objs[:key].to_pem
+        -> { OpenSSL::PKey::RSA.new(key_bytes, 'try_pass') }.should_not raise_error
+      end
+
+      #it 'Must generate p7 key with password' do
+      #  objs = SecurityObject.p7_self_signed_certificate(
+      #      :password => 'try_pass',
+      #      :pack_key_with_pass => true
+      #  )
+      #  key_bytes = objs[:key].to_pem
+      #  -> { OpenSSL::PKey::RSA.new(key_bytes, nil) }.should raise_error
+      #end
+
+      it 'Must generate p7 cert with crl' do
+        crl = [
+          ['URI', 'http://my.com/my.crl'],
+          ['URI', 'http://oth.com/my.crl']
+        ]
+        objs = SecurityObject.p7_self_signed_certificate(
+            :crl_points => crl
+        )
+        cert = objs[:certificate]
+        extensions = SecurityObject.get_extensions(cert)
+        extensions['crlDistributionPoints'].should_not be_nil
+      end
     end
   end
 

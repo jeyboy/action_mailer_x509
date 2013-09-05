@@ -44,7 +44,7 @@ module ActionMailerX509
     end
 
     def sign(text)
-      write OpenSSL::PKCS7.sign(certificate, rsa_key, text, [], OpenSSL::PKCS7::DETACHED|OpenSSL::PKCS7::BINARY)
+      write OpenSSL::PKCS7.sign(certificate, rsa_key, text, [], sign_flags)
     end
 
     def verify(text)
@@ -56,6 +56,15 @@ module ActionMailerX509
     end
 
     protected
+      def sign_flags
+        OpenSSL::PKCS7::NOCERTS
+        OpenSSL::PKCS7::DETACHED
+        OpenSSL::PKCS7::BINARY
+        OpenSSL::PKCS7::NOATTR
+        OpenSSL::PKCS7::NOSMIMECAP
+        OpenSSL::PKCS7::DETACHED | OpenSSL::PKCS7::BINARY #| OpenSSL::PKCS7::NOATTR
+      end
+
       def write(pcks7)
         OpenSSL::PKCS7::write_smime pcks7
       end

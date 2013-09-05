@@ -12,12 +12,16 @@ class SecurityObject
   #params:  Hash
     #key_length           int       - length of the rsa key
     #password             string    - passphrase for key/certificate
+    #digest               object    - digest algo - OpenSSL::Digest object (ex OpenSSL::Digest::SHA1.new)
     #pack_key_with_pass   bool      - force repack rsa key with given password
     #subject              Hash      - fields represented by ATTRS const
     #time_from            Time      - certificate start time
     #time_length          int       - certificate life time in seconds
+    #crl_points           string or array     - URI:http://my.com/my.crl,URI:http://oth.com/my.crl
+
+    #--------only p12-----------
     #description          string    - p12 description
-    #file                 string    - file path - where have be save new certificate
+    #file                 string    - new p12 file path - where have be save new certificate
   class << self
     private
       def to_file(data, path)
@@ -35,6 +39,15 @@ class SecurityObject
         OpenSSL::X509::Name.parse subject
       end
 
+      def crl(crl_points)
+        if crl_points.is_a? String
+          crl_points
+        else
+          crl_points.each_with_object([]) {|elem, obj| obj << "#{elem[0]}:#{elem[1]}"}.join(',')
+        end
+      end
+
+      # not tested
       def repack_key(rsa_key, password)
         cipher =  OpenSSL::Cipher::Cipher.new('des3')
         private_key = rsa_key.to_pem(cipher, password)
@@ -61,119 +74,165 @@ class SecurityObject
 
         [ root_key, root_ca ]
       end
+
+      def self_signed_certificate(params = {})
+        root_key, root_ca = certificate(params)
+        root_ca.serial = 1
+
+        ef = OpenSSL::X509::ExtensionFactory.new
+        ef.subject_certificate = root_ca
+        ef.issuer_certificate = root_ca
+        root_ca.add_extension(ef.create_extension('basicConstraints', 'CA:TRUE', true))
+        root_ca.add_extension(ef.create_extension('keyUsage', 'keyCertSign, cRLSign', true))
+        root_ca.add_extension(ef.create_extension('subjectKeyIdentifier', 'hash', false))
+        root_ca.add_extension(ef.create_extension('authorityKeyIdentifier', 'keyid:always', false))
+        root_ca.add_extension(ef.create_extension('crlDistributionPoints', crl(params[:crl_points]), false)) if params[:crl_points]
+
+  #      ef = OpenSSL::X509::ExtensionFactory.new
+  #      ef.subject_certificate = cert
+  #      ef.issuer_certificate = cert
+  #      cert.extensions = [
+  #          ef.create_extension("basicConstraints","CA:TRUE", true),
+  #          ef.create_extension("subjectKeyIdentifier", "hash"),
+  ## ef.create_extension("keyUsage", "cRLSign,keyCertSign", true),
+  #      ]
+  #      cert.add_extension ef.create_extension("authorityKeyIdentifier",
+  #                                             "keyid:always,issuer:always")
+
+        root_ca.sign(root_key, params[:digest] || default_digest)
+        [ root_key, root_ca ]
+      end
+
+      def signed_certificate(params = {})
+        root_key, root_ca = self_signed_certificate(params)
+        key, cert = certificate(params, root_ca)
+        cert.serial = 2
+
+        ef = OpenSSL::X509::ExtensionFactory.new
+        ef.subject_certificate = cert
+        ef.issuer_certificate = root_ca
+        cert.add_extension(ef.create_extension('keyUsage', 'digitalSignature', true))
+        cert.add_extension(ef.create_extension('subjectKeyIdentifier', 'hash', false))
+        cert.add_extension(ef.create_extension('crlDistributionPoints', crl(params[:crl_points]), false)) if params[:crl_points]
+        cert.sign(root_key,  params[:digest] || default_digest)
+
+        [ key, cert ]
+      end
+
+      def default_digest
+        OpenSSL::Digest::SHA256.new
+      end
+
+      def _revoke_check(cert)
+        require 'net/http'
+
+        uris = get_crls(cert)
+        if uris.present?
+          crl = Net::HTTP.get_response(URI(uris[0])) # you may need to follow redirects here, but let's assume you got the CRL.                                                   # Also note that the Apple WWDRCA CRL is like 28MB so you may want to cache this damned thing. OCSP would be nicer but it's a bit trickier to validate.
+          @crl = OpenSSL::X509::CRL.new(crl)
+          raise(StandardError, 'Invalid CRL for certificate') if not @crl.verify(cert.public_key)
+          if @crl.revoked.find { |revoked| revoked.serial == cert.serial.to_i }
+            true
+          else
+            false
+          end
+        end || false
+      end
     public
 
-    def self_signed_certificate(params = {})
+    def p7_self_signed_certificate(params = {})
       params.symbolize_keys!
 
-      root_key, root_ca = certificate(params)
-      root_ca.serial = 1
-
-      ef = OpenSSL::X509::ExtensionFactory.new
-      ef.subject_certificate = root_ca
-      ef.issuer_certificate = root_ca
-      root_ca.add_extension(ef.create_extension('basicConstraints', 'CA:TRUE', true))
-      root_ca.add_extension(ef.create_extension('keyUsage', 'keyCertSign, cRLSign', true))
-      root_ca.add_extension(ef.create_extension('subjectKeyIdentifier', 'hash', false))
-      root_ca.add_extension(ef.create_extension('authorityKeyIdentifier', 'keyid:always', false))
-      root_ca.sign(root_key, OpenSSL::Digest::SHA256.new)
-
-
-      [ root_key, root_ca ]
-
-
-#      key = OpenSSL::PKey::RSA.new(1024)
-#      public_key = key.public_key
-#
-#      subject = "/C=BE/O=Test/OU=Test/CN=Test"
-#
-#      cert = OpenSSL::X509::Certificate.new
-#      cert.subject = cert.issuer = OpenSSL::X509::Name.parse(subject)
-#      cert.not_before = Time.now
-#      cert.not_after = Time.now + 365 * 24 * 60 * 60
-#      cert.public_key = public_key
-#      cert.serial = 0x0
-#      cert.version = 2
-#
-#      ef = OpenSSL::X509::ExtensionFactory.new
-#      ef.subject_certificate = cert
-#      ef.issuer_certificate = cert
-#      cert.extensions = [
-#          ef.create_extension("basicConstraints","CA:TRUE", true),
-#          ef.create_extension("subjectKeyIdentifier", "hash"),
-## ef.create_extension("keyUsage", "cRLSign,keyCertSign", true),
-#      ]
-#      cert.add_extension ef.create_extension("authorityKeyIdentifier",
-#                                             "keyid:always,issuer:always")
-#
-#      cert.sign key, OpenSSL::Digest::SHA1.new
+      key, cert = self_signed_certificate(params)
+      {key: key, certificate: cert}
     end
 
-    def signed_certificate(params = {})
+    def p7_signed_certificate(params = {})
       params.symbolize_keys!
-      root_key, root_ca = self_signed_certificate(params)
-      key, cert = certificate(params, root_ca)
-      cert.serial = 2
-
-      ef = OpenSSL::X509::ExtensionFactory.new
-      ef.subject_certificate = cert
-      ef.issuer_certificate = root_ca
-      cert.add_extension(ef.create_extension('keyUsage', 'digitalSignature', true))
-      cert.add_extension(ef.create_extension('subjectKeyIdentifier', 'hash', false))
-      cert.sign(root_key, OpenSSL::Digest::SHA256.new)
-
-      [ key, cert ]
+      key, cert = signed_certificate(params)
+      {key: key, certificate: cert}
     end
-
 
     def p12_certificate(params = {})
       params.symbolize_keys!
 
       key, cert = signed_certificate(params)
-
-      #root_key = OpenSSL::PKey::RSA.new 4096 # the CA's public/private key
-      #root_ca = OpenSSL::X509::Certificate.new
-      #root_ca.version = 2 # cf. RFC 5280 - to make it a "v3" certificate
-      #root_ca.serial = 1
-      #root_ca.subject = OpenSSL::X509::Name.parse "/DC=org/DC=ruby-lang/CN=Ruby CA"
-      #root_ca.issuer = root_ca.subject # root CA's are "self-signed"
-      #root_ca.public_key = root_key.public_key
-      #root_ca.not_before = Time.now
-      #root_ca.not_after = root_ca.not_before + 2 * 365 * 24 * 60 * 60 # 2 years validity
-      #
-      #ef = OpenSSL::X509::ExtensionFactory.new
-      #ef.subject_certificate = root_ca
-      #ef.issuer_certificate = root_ca
-      #root_ca.add_extension(ef.create_extension('basicConstraints', 'CA:TRUE', true))
-      #root_ca.add_extension(ef.create_extension('keyUsage', 'keyCertSign, cRLSign', true))
-      #root_ca.add_extension(ef.create_extension('subjectKeyIdentifier', 'hash', false))
-      #root_ca.add_extension(ef.create_extension('authorityKeyIdentifier', 'keyid:always', false))
-      #root_ca.sign(root_key, OpenSSL::Digest::SHA256.new)
-      #
-      ## The next step is to create the end-entity certificate using the root CA
-      ## certificate.
-      ##
-      #key = OpenSSL::PKey::RSA.new 4096
-      #cert = OpenSSL::X509::Certificate.new
-      #cert.version = 2
-      #cert.serial = 2
-      #cert.subject = OpenSSL::X509::Name.parse "/DC=org/DC=ruby-lang/CN=Ruby certificate"
-      #cert.issuer = root_ca.subject # root CA is the issuer
-      #cert.public_key = key.public_key
-      #cert.not_before = Time.now
-      #cert.not_after = cert.not_before + 1 * 365 * 24 * 60 * 60 # 1 years validity
-      #
-      #ef = OpenSSL::X509::ExtensionFactory.new
-      #ef.subject_certificate = cert
-      #ef.issuer_certificate = root_ca
-      #cert.add_extension(ef.create_extension('keyUsage', 'digitalSignature', true))
-      #cert.add_extension(ef.create_extension('subjectKeyIdentifier', 'hash', false))
-      #cert.sign(root_key, OpenSSL::Digest::SHA256.new)
-
       p12 = OpenSSL::PKCS12.create(params[:password], params[:description] || 'My Name', key, cert)
       bytes = p12.to_der
       to_file(bytes, path) if params[:file]
       bytes
     end
+
+    def get_extensions(cert)
+      cert.extensions.each_with_object({}) do |ext, obj|
+        e = OpenSSL::X509::Extension.new(ext)
+        obj.update(e.oid => e.value)
+      end
+    end
+
+    def get_crls(cert)
+      points = get_extensions(cert)['crlDistributionPoints']
+      points.split(/\nFull Name:\n  URI:/).from(1)
+    end
+
+
+    def validate_certificate(cert_file)
+      criteria = {}
+
+      begin
+        cert = OpenSSL::X509::Certificate.new(File::read(cert_file))
+        criteria.update(expired: true) if
+            cert.not_before > Time.now ||
+            cert.not_after < Time.now
+
+        criteria.update(revoked: true) if _revoke_check(cert)
+      rescue
+        criteria.update(invalid_signature: true)
+      end
+      criteria
+    end
+
+
+#    def validate_certificate2(cert_file)
+#      cert = R509::Cert.load_from_file("my_website.pem")
+## get the first OCSP AIA URI. There can be more than one
+## (degenerate example!)
+#      ocsp_uri = cert.aia.ocsp.uris[0]
+#      issuer = R509::Cert.load_from_file("my_issuer.pem")
+#      cert_id = OpenSSL::OCSP::CertificateId.new(cert.cert,issuer.cert)
+#      request = OpenSSL::OCSP::Request.new
+#      request.add_certid(cert_id)
+## we're going to make a GET request per RFC 5019. You can also POST the
+## binary DER encoded version if you're more of an RFC 2560 partisan
+#      request_uri = URI(ocsp_uri+"/"+URI.encode_www_form_component(req_pem.strip))
+#      http_response = Net::HTTP.get_response(request_uri)
+#      if http_response.code != "200"
+#        raise StandardError, "Invalid response code from OCSP responder"
+#      end
+#      response = OpenSSL::OCSP::Response.new(http_response.body)
+#      if response.status != 0
+#        raise StandardError, "Not a successful status"
+#      end
+#      if response.basic[0][0].serial != cert.serial
+#        raise StandardError, "Not the same serial"
+#      end
+#      if response.basic[0][1] != 0 # 0 is good, 1 is revoked, 2 is unknown.
+#        raise StandardError, "Not a good status"
+#      end
+#      current_time = Time.now
+#      if response.basic[0][4] > current_time or response.basic[0][5] < current_time
+#        raise StandardError, "The response is not within its validity window"
+#      end
+## we also need to verify that the OCSP response is signed by
+## a certificate that is allowed and chains up to a trusted root.
+## To do this you'll need to build an OpenSSL::X509::Store object
+## that contains the certificate you're checking + intermediates + root.
+#      store = OpenSSL::X509::Store.new
+#      store.add_cert(cert.cert)
+#      store.add_cert(issuer.cert) #assuming issuer is a trusted root here, but in reality you'll need at least one more certificate
+#      if response.basic.verify([],store) != true
+#        raise StandardError, "Certificate verification error"
+#      end
+#    end
   end
 end
