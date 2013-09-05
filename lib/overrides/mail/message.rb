@@ -73,8 +73,8 @@ module Mail #:nodoc:
           _decode_body(result_type, @new_part || part)
         else
           part.decoded unless part.attachment?
-        end
-      end.to_s
+        end.to_s
+      end
 
     # we need manually split body on parts and decode each part separate
       def _decode_body(result_type, obj = self)
