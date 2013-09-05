@@ -36,7 +36,7 @@ module Mail #:nodoc:
 
     def get_states
       {
-          crypted: (body.to_s =~ /application\/(x-)?pkcs[0-9]+-mime/).present?,
+          crypted: (body.to_s =~ /application\/(x-)?pkcs[0-9]+-mime/).present? || is_crypted?,
           signed: (body.to_s =~ /application\/(x-)?pkcs[0-9]+-signature/).present?
       }
     end
