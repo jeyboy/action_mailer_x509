@@ -4,7 +4,7 @@
 
 Allows you to send X509 signed and/or crypted mails for Ruby on Rails. Also my you possibility verify and decrypt X509 signed and/or crypted mails.
 
-It has been tested with Rails 3.2.12.
+It has been tested with Rails 3.2.12 and Rails 4.
 
 == Creation of the certificates
 
@@ -86,7 +86,8 @@ First for all - run install generator, which adds configuration file
     rails g action_mailer_x509:install
 
 After the process, add base configurations for emails processing in '/config/initializers/x509_settings'
-
+  
+  #standart config
   config.add_configuration :demo,
                            {
                                sign_enable: false,
@@ -99,6 +100,39 @@ After the process, add base configurations for emails processing in '/config/ini
                                crypt_passphrase: 'demo',
                                certs_path: Rails.root.join('certs')
                            }
+  
+  #p12 certificate using                         
+  config.add_configuration :p12,
+                           {
+                               sign_enable: false,
+                               crypt_enable: true,
+                               sign_cert_p12: 'cert.p12',
+                               sign_passphrase: 'demo',
+                               crypt_cert_p12: 'cert.p12',
+                               crypt_passphrase: 'demo',
+                               certs_path: Rails.root.join('certs')
+                           }
+                           
+  #short variant - in this case used one cert/key for sign and crypt
+  config.add_configuration :short_demo,
+                           {
+                               sign_enable: false,
+                               crypt_enable: true,
+                               cert: 'cert.crt',
+                               key: 'cert.key',
+                               passphrase: 'demo',
+                               certs_path: Rails.root.join('certs')
+                           }
+                           
+  #short p12 variant - in this case used one cert for sign and crypt
+  config.add_configuration :short_p12,
+                           {
+                               sign_enable: false,
+                               crypt_enable: true,
+                               cert_p12: 'cert.p12',
+                               passphrase: 'demo',
+                               certs_path: Rails.root.join('certs')
+                           }                           
 
   config.add_configuration :none,
                            {
@@ -155,6 +189,8 @@ Decoding/Verify
 
   Mail.new(encoded_mail).proceed(result_type, configuration)
   
+  'result_type' param represent type of presentation ('plain', 'html' and etc.)
+
 
 == HELPERS
 
@@ -168,6 +204,27 @@ For example:
    mail.body                => return body in default encoding
    mail.body_as_koi8_r      => return body in koi8-r encoding
 
+Also you may generate new p12 certificates
+
+  bytes = SecurityObject.p12_certificate({
+      subject: {
+            :country => 'TestCountry',
+            :state => 'TestState',
+            :location => 'TestLocation',
+            :organization => 'TestOrganization',
+            :organizational_unit => 'TestOrganizationalUnit',
+            :common_name => 'TestCommonName',
+            :email => 'a@b.com'
+      },
+      password: 'your passphrase',
+      time_from: Time.now,
+      time_length: 2.years
+                                         })
+  File.open('1.p12', 'wb') do |file|
+    file.write(bytes)
+  end
+   
+  
 == USING TEST
 
 You mau use rspec tests by command
