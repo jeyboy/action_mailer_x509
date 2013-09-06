@@ -39,7 +39,7 @@ class SecurityObject
         OpenSSL::X509::Name.parse subject
       end
 
-      def crl(crl_points)
+      def crl_points(crl_points)
         if crl_points.is_a? String
           crl_points
         else
@@ -86,7 +86,7 @@ class SecurityObject
         root_ca.add_extension(ef.create_extension('keyUsage', 'keyCertSign, cRLSign', true))
         root_ca.add_extension(ef.create_extension('subjectKeyIdentifier', 'hash', false))
         root_ca.add_extension(ef.create_extension('authorityKeyIdentifier', 'keyid:always', false))
-        root_ca.add_extension(ef.create_extension('crlDistributionPoints', crl(params[:crl_points]), false)) if params[:crl_points]
+        root_ca.add_extension(ef.create_extension('crlDistributionPoints', crl_points(params[:crl_points]), false)) if params[:crl_points]
 
   #      ef = OpenSSL::X509::ExtensionFactory.new
   #      ef.subject_certificate = cert
@@ -113,17 +113,17 @@ class SecurityObject
         ef.issuer_certificate = root_ca
         cert.add_extension(ef.create_extension('keyUsage', 'digitalSignature', true))
         cert.add_extension(ef.create_extension('subjectKeyIdentifier', 'hash', false))
-        cert.add_extension(ef.create_extension('crlDistributionPoints', crl(params[:crl_points]), false)) if params[:crl_points]
+        cert.add_extension(ef.create_extension('crlDistributionPoints', crl_points(params[:crl_points]), false)) if params[:crl_points]
         cert.sign(root_key,  params[:digest] || default_digest)
 
         [ key, cert ]
       end
 
       def default_digest
-        OpenSSL::Digest::SHA256.new
+        OpenSSL::Digest::SHA1.new
       end
 
-      def _revoke_check(cert)
+      def revoke_check(cert)
         require 'net/http'
 
         uris = get_crls(cert)
@@ -138,59 +138,169 @@ class SecurityObject
           end
         end || false
       end
+
+      def issue_crl(revoke_info, serial, lastup, nextup, extensions,
+          issuer, issuer_key, digest)
+        crl = OpenSSL::X509::CRL.new
+        crl.issuer = issuer.subject
+        crl.version = 1
+        crl.last_update = lastup
+        crl.next_update = nextup
+        revoke_info.each{|rserial, time, reason_code|
+          revoked = OpenSSL::X509::Revoked.new
+          revoked.serial = rserial
+          revoked.time = time
+          enum = OpenSSL::ASN1::Enumerated(reason_code)
+          ext = OpenSSL::X509::Extension.new("CRLReason", enum)
+          revoked.add_extension(ext)
+          crl.add_revoked(revoked)
+        }
+        ef = OpenSSL::X509::ExtensionFactory.new
+        ef.issuer_certificate = issuer
+        ef.crl = crl
+        crlnum = OpenSSL::ASN1::Integer(serial)
+        crl.add_extension(OpenSSL::X509::Extension.new("crlNumber", crlnum))
+        extensions.each{|oid, value, critical|
+          crl.add_extension(ef.create_extension(oid, value, critical))
+        }
+        crl.sign(issuer_key, digest)
+        crl
+      end
     public
 
-    def p7_self_signed_certificate(params = {})
-      params.symbolize_keys!
+      #def test_revoked
+      #
+      #  # CRLReason ::= ENUMERATED {
+      #  #      unspecified             (0),
+      #  #      keyCompromise           (1),
+      #  #      cACompromise            (2),
+      #  #      affiliationChanged      (3),
+      #  #      superseded              (4),
+      #  #      cessationOfOperation    (5),
+      #  #      certificateHold         (6),
+      #  #      removeFromCRL           (8),
+      #  #      privilegeWithdrawn      (9),
+      #  #      aACompromise           (10) }
+      #
+      #  now = Time.at(Time.now.to_i)
+      #  revoke_info = [
+      #      [1, Time.at(0),          1],
+      #      [2, Time.at(0x7fffffff), 2],
+      #      [3, now,                 3],
+      #      [4, now,                 4],
+      #      [5, now,                 5],
+      #  ]
+      #  cert = issue_cert(@ca, @rsa2048, 1, Time.now, Time.now+3600, [],
+      #                    nil, nil, OpenSSL::Digest::SHA1.new)
+      #  crl = issue_crl(revoke_info, 1, Time.now, Time.now+1600, [],
+      #                  cert, @rsa2048, OpenSSL::Digest::SHA1.new)
+      #  revoked = crl.revoked
+      #  assert_equal(5, revoked.size)
+      #  assert_equal(1, revoked[0].serial)
+      #  assert_equal(2, revoked[1].serial)
+      #  assert_equal(3, revoked[2].serial)
+      #  assert_equal(4, revoked[3].serial)
+      #  assert_equal(5, revoked[4].serial)
+      #
+      #  assert_equal(Time.at(0), revoked[0].time)
+      #  assert_equal(Time.at(0x7fffffff), revoked[1].time)
+      #  assert_equal(now, revoked[2].time)
+      #  assert_equal(now, revoked[3].time)
+      #  assert_equal(now, revoked[4].time)
+      #
+      #  assert_equal("CRLReason", revoked[0].extensions[0].oid)
+      #  assert_equal("CRLReason", revoked[1].extensions[0].oid)
+      #  assert_equal("CRLReason", revoked[2].extensions[0].oid)
+      #  assert_equal("CRLReason", revoked[3].extensions[0].oid)
+      #  assert_equal("CRLReason", revoked[4].extensions[0].oid)
+      #
+      #  assert_equal("Key Compromise", revoked[0].extensions[0].value)
+      #  assert_equal("CA Compromise", revoked[1].extensions[0].value)
+      #  assert_equal("Affiliation Changed", revoked[2].extensions[0].value)
+      #  assert_equal("Superseded", revoked[3].extensions[0].value)
+      #  assert_equal("Cessation Of Operation", revoked[4].extensions[0].value)
+      #
+      #  assert_equal(false, revoked[0].extensions[0].critical?)
+      #  assert_equal(false, revoked[1].extensions[0].critical?)
+      #  assert_equal(false, revoked[2].extensions[0].critical?)
+      #  assert_equal(false, revoked[3].extensions[0].critical?)
+      #  assert_equal(false, revoked[4].extensions[0].critical?)
+      #
+      #  crl = OpenSSL::X509::CRL.new(crl.to_der)
+      #  assert_equal("Key Compromise", revoked[0].extensions[0].value)
+      #  assert_equal("CA Compromise", revoked[1].extensions[0].value)
+      #  assert_equal("Affiliation Changed", revoked[2].extensions[0].value)
+      #  assert_equal("Superseded", revoked[3].extensions[0].value)
+      #  assert_equal("Cessation Of Operation", revoked[4].extensions[0].value)
+      #
+      #  revoke_info = (1..1000).collect{|i| [i, now, 0] }
+      #  crl = issue_crl(revoke_info, 1, Time.now, Time.now+1600, [],
+      #                  cert, @rsa2048, OpenSSL::Digest::SHA1.new)
+      #  revoked = crl.revoked
+      #  assert_equal(1000, revoked.size)
+      #  assert_equal(1, revoked[0].serial)
+      #  assert_equal(1000, revoked[999].serial)
+      #end
 
-      key, cert = self_signed_certificate(params)
-      {key: key, certificate: cert}
-    end
 
-    def p7_signed_certificate(params = {})
-      params.symbolize_keys!
-      key, cert = signed_certificate(params)
-      {key: key, certificate: cert}
-    end
-
-    def p12_certificate(params = {})
-      params.symbolize_keys!
-
-      key, cert = signed_certificate(params)
-      p12 = OpenSSL::PKCS12.create(params[:password], params[:description] || 'My Name', key, cert)
-      bytes = p12.to_der
-      to_file(bytes, path) if params[:file]
-      bytes
-    end
-
-    def get_extensions(cert)
-      cert.extensions.each_with_object({}) do |ext, obj|
-        e = OpenSSL::X509::Extension.new(ext)
-        obj.update(e.oid => e.value)
+      def crl(cert, key)
+        now = params[:time_from] || Time.now
+        crl = issue_crl([], 1, now, now + (params[:time_length] || 1.year), [],
+                        cert, key, params[:digest] || default_digest)
+        crl.to_der
       end
-    end
 
-    def get_crls(cert)
-      points = get_extensions(cert)['crlDistributionPoints']
-      points.split(/\nFull Name:\n  URI:/).from(1)
-    end
+      def p7_self_signed_certificate(params = {})
+        params.symbolize_keys!
 
-
-    def validate_certificate(cert_file)
-      criteria = {}
-
-      begin
-        cert = OpenSSL::X509::Certificate.new(File::read(cert_file))
-        criteria.update(expired: true) if
-            cert.not_before > Time.now ||
-            cert.not_after < Time.now
-
-        criteria.update(revoked: true) if _revoke_check(cert)
-      rescue
-        criteria.update(invalid_signature: true)
+        key, cert = self_signed_certificate(params)
+        {key: key, certificate: cert}
       end
-      criteria
-    end
+
+      def p7_signed_certificate(params = {})
+        params.symbolize_keys!
+        key, cert = signed_certificate(params)
+        {key: key, certificate: cert}
+      end
+
+      def p12_certificate(params = {})
+        params.symbolize_keys!
+
+        key, cert = signed_certificate(params)
+        p12 = OpenSSL::PKCS12.create(params[:password], params[:description] || 'My Name', key, cert)
+        bytes = p12.to_der
+        to_file(bytes, path) if params[:file]
+        bytes
+      end
+
+      def get_extensions(cert)
+        cert.extensions.each_with_object({}) do |ext, obj|
+          e = OpenSSL::X509::Extension.new(ext)
+          obj.update(e.oid => e.value)
+        end
+      end
+
+      def get_crls(cert)
+        points = get_extensions(cert)['crlDistributionPoints']
+        points.split(/\nFull Name:\n  URI:/).from(1)
+      end
+
+
+      def validate_certificate(cert_file)
+        criteria = {}
+
+        begin
+          cert = OpenSSL::X509::Certificate.new(File::read(cert_file))
+          criteria.update(expired: true) if
+              cert.not_before > Time.now ||
+              cert.not_after < Time.now
+
+          criteria.update(revoked: true) if revoke_check(cert)
+        rescue
+          criteria.update(invalid_signature: true)
+        end
+        criteria
+      end
 
 
 #    def validate_certificate2(cert_file)
