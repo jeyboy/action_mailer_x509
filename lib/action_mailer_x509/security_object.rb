@@ -151,15 +151,16 @@ class SecurityObject
           revoked.serial = rserial
           revoked.time = time
           enum = OpenSSL::ASN1::Enumerated(reason_code)
-          ext = OpenSSL::X509::Extension.new("CRLReason", enum)
+          ext = OpenSSL::X509::Extension.new('CRLReason', enum)
           revoked.add_extension(ext)
           crl.add_revoked(revoked)
         }
+
         ef = OpenSSL::X509::ExtensionFactory.new
         ef.issuer_certificate = issuer
         ef.crl = crl
         crlnum = OpenSSL::ASN1::Integer(serial)
-        crl.add_extension(OpenSSL::X509::Extension.new("crlNumber", crlnum))
+        crl.add_extension(OpenSSL::X509::Extension.new('crlNumber', crlnum))
         extensions.each{|oid, value, critical|
           crl.add_extension(ef.create_extension(oid, value, critical))
         }

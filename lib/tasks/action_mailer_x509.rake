@@ -42,7 +42,7 @@ namespace :action_mailer_x509 do
     add_config(true, false)
     mail = Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>')
 
-    verified = mail.proceed('html', Notifier.x509_configuration)
+    verified = mail.proceed(configuration: Notifier.x509_configuration)
     puts "Verification is #{(verified) == raw_mail.body.to_s}"
   end
 
@@ -86,7 +86,7 @@ namespace :action_mailer_x509 do
     add_config(false, true)
     mail = Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>')
 
-    decrypted = mail.proceed('html', Notifier.x509_configuration)
+    decrypted = mail.proceed(configuration: Notifier.x509_configuration)
     puts "Crypt verification is #{decrypted.to_s == raw_mail.body.decoded}"
   end
 
@@ -115,7 +115,7 @@ namespace :action_mailer_x509 do
     add_config
     mail = Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>')
 
-    decrypted = mail.proceed('html', Notifier.x509_configuration)
+    decrypted = mail.proceed(configuration: Notifier.x509_configuration)
     puts "Verification is #{decrypted.to_s == raw_mail.body.decoded}"
   end
 

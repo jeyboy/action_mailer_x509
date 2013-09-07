@@ -11,8 +11,10 @@ module Mail #:nodoc:
       header[:subject].default
     end
 
-    def proceed(result_type = 'html', configuration = nil)
-      proceed_part(_proceed(configuration), result_type)
+    def proceed(args = {})# result_type = 'html', configuration = nil
+      proceed_part(_proceed(
+                       args[:configuration] || ActionMailerX509.default_configuration
+                   ), args[:result_type] || 'html')
     end
 
     def method_missing(name, *args, &block)

@@ -16,7 +16,7 @@ describe 'Test basic functions' do
       end
 
       it 'Verification check' do
-        verified = @mail.proceed('plain', Notifier.x509_configuration)
+        verified = @mail.proceed(configuration: Notifier.x509_configuration)
         verified.should eql @raw_mail.body.to_s
       end
     end
@@ -35,7 +35,7 @@ describe 'Test basic functions' do
       end
 
       it 'Must generate crypted text' do
-        decrypted = @mail.proceed('plain', Notifier.x509_configuration)
+        decrypted = @mail.proceed(configuration: Notifier.x509_configuration)
         decrypted.to_s.should eql @raw_mail.body.decoded
       end
     end
@@ -47,7 +47,7 @@ describe 'Test basic functions' do
       add_config
       mail = Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>')
 
-      decrypted = mail.proceed('plain', Notifier.x509_configuration)
+      decrypted = mail.proceed(configuration: Notifier.x509_configuration)
       decrypted.to_s.should eql raw_mail.body.decoded
     end
 
@@ -58,7 +58,7 @@ describe 'Test basic functions' do
       add_config(true, true, true)
       mail = Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>')
 
-      decrypted = mail.proceed('plain', Notifier.x509_configuration)
+      decrypted = mail.proceed(configuration: Notifier.x509_configuration)
       decrypted.to_s.should eql raw_mail.body.decoded
     end
   end
@@ -71,7 +71,7 @@ describe 'Test basic functions' do
       mail.body.to_s.should_not be_empty
 
       set_config_param(sign_passphrase: 'wrong')
-      -> { mail.proceed('plain', Notifier.x509_configuration) }.should raise_error OpenSSL::PKey::RSAError
+      -> { mail.proceed(configuration: Notifier.x509_configuration) }.should raise_error OpenSSL::PKey::RSAError
     end
 
     describe 'incorrect text' do
@@ -79,14 +79,14 @@ describe 'Test basic functions' do
         add_config(true, false)
         mail = Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>')
         mail.body = mail.body.to_s.gsub(/[0-9]/, 'g')
-        -> { mail.proceed('plain', Notifier.x509_configuration) }.should raise_error VerificationError
+        -> { mail.proceed(configuration: Notifier.x509_configuration) }.should raise_error VerificationError
       end
 
       it 'crypt' do
         add_config(false, true)
         mail = Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>')
         mail.body = mail.body.to_s.gsub(/[0-9]/, 'g')
-        -> { mail.proceed('plain', Notifier.x509_configuration) }.should raise_error DecodeError
+        -> { mail.proceed(configuration: Notifier.x509_configuration) }.should raise_error DecodeError
       end
     end
 
@@ -97,7 +97,7 @@ describe 'Test basic functions' do
                          crypt_key: 'cert.key')
         mail = Notifier.fufu('<destination@foobar.com>', '<demo@foobar.com>')
         mail.body = mail.body.to_s.gsub(/[0-9]/, 'g')
-        -> { mail.proceed('plain', Notifier.x509_configuration) }.should raise_error VerificationError
+        -> { mail.proceed(configuration: Notifier.x509_configuration) }.should raise_error VerificationError
       end
 
       it 'crypt' do
