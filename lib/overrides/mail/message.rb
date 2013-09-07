@@ -55,8 +55,10 @@ module Mail #:nodoc:
         if (signed = is_signed?) || is_crypted?
           raise Exception.new('Configuration is nil') unless config
           result = if signed
+                     raise Exception.new('Configuration not valid for verification operation') unless config.sign_require?
                      config.get_signer.verify(patched_encoded)
                    else
+                     raise Exception.new('Configuration not valid for decode operation') unless config.crypt_require?
                      config.get_crypter.decode(body.to_s)
                    end
           if result && (mail = Mail.new(result)).valid?

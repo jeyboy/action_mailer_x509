@@ -7,6 +7,7 @@ require 'action_mailer_x509/x509'
 require 'action_mailer_x509/security_object'
 require 'action_mailer_x509/configuration'
 require 'models/notifier'
+require 'default_data'
 
 RSpec.configure do |config|
 
@@ -14,6 +15,17 @@ end
 
 def get_config
   ActionMailerX509.get_configuration :test
+end
+
+def add_none_config
+  ActionMailerX509.default_certs_path = "#{File.dirname(__FILE__)}/../certs"
+
+  attrs = {
+      sign_enable: false,
+      crypt_enable: false
+  }
+
+  ActionMailerX509.add_configuration :none, attrs
 end
 
 def add_config(sign = true, crypt = true, p12 = false)
