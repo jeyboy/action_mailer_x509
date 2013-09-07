@@ -25,7 +25,7 @@ describe 'Mail' do
         it 'with invalid default' do
           add_none_config
           ActionMailerX509.default_configuration = :none
-          -> { @mail.proceed }.should raise_error 'Configuration not valid for verification operation'
+          -> { @mail.proceed }.should raise_error 'Configuration not valid for sign operations'
         end
 
         it 'without default' do

@@ -27,6 +27,8 @@ class Configuration
   class_attribute :sign_cert_p12
   class_attribute :crypt_cert_p12
 
+  #Todo: add func sign_demand?, crypt_demand?
+
   def sign_require?
     sign_enable == true
   end
@@ -68,10 +70,14 @@ class Configuration
   end
 
   def get_crypter
+    #Todo: add check on valid crypt config
+    raise Exception.new('Configuration not valid for crypt operations') unless crypt_require?
     ActionMailerX509::X509.new(crypt_configuration)
   end
 
   def get_signer
+    #Todo: add check on valid sign config
+    raise Exception.new('Configuration not valid for sign operations') unless sign_require?
     ActionMailerX509::X509.new(sign_configuration)
   end
 
