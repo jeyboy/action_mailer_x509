@@ -10,24 +10,32 @@ class SecurityObject
   IATTRS = ATTRS.invert
 
   #params:  Hash
-    #key_length           int       - length of the rsa key
-    #password             string    - passphrase for key/certificate
-    #digest               object    - digest algo - OpenSSL::Digest object (ex OpenSSL::Digest::SHA1.new)
-    #pack_key_with_pass   bool      - force repack rsa key with given password
-    #subject              Hash      - fields represented by ATTRS const
-    #time_from            Time      - certificate start time
-    #time_length          int       - certificate life time in seconds
+    #key_length           int                 - length of the rsa key
+    #password             string              - passphrase for key/certificate
+    #digest               object              - digest algo - OpenSSL::Digest object (ex OpenSSL::Digest::SHA1.new)
+    #pack_key_with_pass   bool                - force repack rsa key with given password
+    #subject              Hash                - fields represented by ATTRS const
+    #time_from            Time                - certificate start time
+    #time_length          int                 - certificate life time in seconds
     #crl_points           string or array     - URI:http://my.com/my.crl,URI:http://oth.com/my.crl
+
+    #root_key             string or obj       - custom key for p12 and p7 signed certs
+    #root_certificate     string or obj       - custom certificate for p12 and p7 signed certs
 
     #--------only p12-----------
     #description          string    - p12 description
     #file                 string    - new p12 file path - where have be save new certificate
+
   class << self
     private
       def to_file(data, path)
         File.open(path, 'wb') do |file|
           file.write(data)
         end
+      end
+
+      def default_digest
+        OpenSSL::Digest::SHA1.new
       end
 
       def subject(params)
@@ -55,13 +63,21 @@ class SecurityObject
         OpenSSL::PKey::RSA.new(private_key + public_key, password)
       end
 
-      def rsa_key(params={})
+      def open_rsa_key(key)
+        (OpenSSL::PKey::RSA.new(key) if key.is_a? String) || key
+      end
+
+      def open_certificate(cert)
+        (OpenSSL::X509::Certificate.new(cert) if cert.is_a? String) || cert
+      end
+
+      def new_rsa_key(params={})
         key = OpenSSL::PKey::RSA.new(params[:key_length] || 4096) # the CA's public/private key
         (repack_key(key, params[:password]) if params[:pack_key_with_pass]) || key
       end
 
       def certificate(params = {}, root_certificate = nil)
-        root_key = rsa_key(params)
+        root_key = new_rsa_key(params)
 
         root_ca = OpenSSL::X509::Certificate.new
         root_ca.version = 2 # cf. RFC 5280 - to make it a "v3" certificate
@@ -104,7 +120,11 @@ class SecurityObject
       end
 
       def signed_certificate(params = {})
-        root_key, root_ca = self_signed_certificate(params)
+        root_key, root_ca = if params[:root_key] && params[:root_certificate]
+                              [open_rsa_key(params[:root_key]), open_certificate(params[:root_certificate])]
+                            else
+                              self_signed_certificate(params)
+                            end
         key, cert = certificate(params, root_ca)
         cert.serial = 2
 
@@ -116,11 +136,7 @@ class SecurityObject
         cert.add_extension(ef.create_extension('crlDistributionPoints', crl_points(params[:crl_points]), false)) if params[:crl_points]
         cert.sign(root_key,  params[:digest] || default_digest)
 
-        [ key, cert ]
-      end
-
-      def default_digest
-        OpenSSL::Digest::SHA1.new
+        [ root_key, key, cert ]
       end
 
       def revoke_check(cert)
@@ -260,14 +276,14 @@ class SecurityObject
 
       def p7_signed_certificate(params = {})
         params.symbolize_keys!
-        key, cert = signed_certificate(params)
-        {key: key, certificate: cert}
+        root_key, key, cert = signed_certificate(params)
+        {key: key, root_key: root_key, certificate: cert}
       end
 
       def p12_certificate(params = {})
         params.symbolize_keys!
 
-        key, cert = signed_certificate(params)
+        root_key, key, cert = signed_certificate(params)
         p12 = OpenSSL::PKCS12.create(params[:password], params[:description] || 'My Name', key, cert)
         bytes = p12.to_der
         to_file(bytes, path) if params[:file]
@@ -286,8 +302,11 @@ class SecurityObject
         points.split(/\nFull Name:\n  URI:/).from(1)
       end
 
+      def validate_cert_key(cert, key)
+        cert.verify key
+      end
 
-      def validate_certificate(cert_file)
+      def validate_certificate_state(cert_file)
         criteria = {}
 
         begin

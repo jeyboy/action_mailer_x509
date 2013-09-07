@@ -2,10 +2,29 @@ require 'spec_helper'
 
 describe 'Cert generation' do
   describe 'Correct' do
+    #Todo: p7 verification schema check
     describe 'p7' do
-      it 'Must generate valid p7' do
-        #p12_bytes = SecurityObject.p12_certificate({:password => 'demo'})
-        #lambda { OpenSSL::PKCS12.new p12_bytes, 'demo' }.should_not raise_error
+      it 'Must generate valid root p7' do
+        objs = SecurityObject.p7_self_signed_certificate
+        SecurityObject.validate_cert_key(objs[:certificate], objs[:key]).should eql true
+      end
+
+      it 'Must generate valid signed p7' do
+        objs = SecurityObject.p7_signed_certificate
+        SecurityObject.validate_cert_key(objs[:certificate], objs[:root_key]).should eql true
+      end
+
+      it 'Must generate valid signed p7 with custom root' do
+        root_objs = SecurityObject.p7_self_signed_certificate
+        objs = SecurityObject.p7_signed_certificate(
+            {
+                :root_key => root_objs[:key],
+                :root_certificate => root_objs[:certificate]
+            }
+        )
+
+        #SecurityObject.validate_cert_key(objs[:certificate], objs[:key].public_key).should eql true
+        SecurityObject.validate_cert_key(objs[:certificate], root_objs[:key]).should eql true
       end
 
       #it 'Must generate p7 key with password' do
