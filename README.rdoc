@@ -98,6 +98,7 @@ After the process, add base configurations for emails processing in '/config/ini
                                crypt_cert: 'cert.crt',
                                crypt_key: 'cert.key',
                                crypt_passphrase: 'demo',
+                               crypt_cipher: 'des',
                                certs_path: Rails.root.join('certs')
                            }
   
@@ -110,6 +111,7 @@ After the process, add base configurations for emails processing in '/config/ini
                                sign_passphrase: 'demo',
                                crypt_cert_p12: 'cert.p12',
                                crypt_passphrase: 'demo',
+                               crypt_cipher: 'aes128',
                                certs_path: Rails.root.join('certs')
                            }
                            
@@ -121,6 +123,7 @@ After the process, add base configurations for emails processing in '/config/ini
                                cert: 'cert.crt',
                                key: 'cert.key',
                                passphrase: 'demo',
+                               crypt_cipher: 'aes256',
                                certs_path: Rails.root.join('certs')
                            }
                            
