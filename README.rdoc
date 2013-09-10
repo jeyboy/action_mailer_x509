@@ -33,6 +33,32 @@ It has been tested with Rails 3.2.12 and Rails 4.
 
   openssl pkcs12 -export -in server.crt -inkey server.key -certfile ca.key -name "My Cert" -out name-cert.p12
 
+Additional settings
+
+(5) Create a CRL. 
+
+ To create a CRL for your CA, you first need to create an index file. This will initially just be a blank file (created with touch). However, as you start to revoke certificates, things will go into here. It's human readable and unsigned, which is why we need to use OpenSSL to make the signed PEM form of it.
+So, once you've got your empty index file (in wherever the openssl.cnf file you've got say's it'll be.... why can't that be a command line option like everything else?), then you can make a CRL from it using:
+
+  openssl ca -gencrl -keyfile ca.key -cert ca.crt -crldays xxx -out my_crl.pem
+  
+(6) Revocation.
+
+Now, with your initial CRL set up, we revoke a certificate:
+
+  openssl ca -revoke bad_crt_file -keyfile ca_key -cert ca_crt
+
+This will automagically update your index.txt file with the new details of your revoked certificate. 
+Now you need to generate a new CRL file, with the same command we used above to generate the blank one. 
+With your new CRL created, you need to publish it! 
+
+(7) Check CRL file
+
+To peek at a CRL file, showing things like the validity and what certificates (if any) have been revoked, use:
+  
+  openssl crl -in crl_file -noout -text 
+
+
 == Extracting the files from a PKCS#12 file
 
 If you have a PKCS#12 file, usualy named .p12, you can extract the required files with
