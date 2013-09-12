@@ -284,6 +284,7 @@ class SecurityObject
         params.symbolize_keys!
 
         root_key, key, cert = signed_certificate(params)
+        #Todo: maybe root key must be included
         p12 = OpenSSL::PKCS12.create(params[:password], params[:description] || 'My Name', key, cert)
         bytes = p12.to_der
         to_file(bytes, path) if params[:file]

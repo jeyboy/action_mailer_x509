@@ -12,9 +12,8 @@ module Mail #:nodoc:
     end
 
     def proceed(args = {})# result_type = 'html', configuration = nil
-      proceed_part(_proceed(
-                       args[:configuration] || ActionMailerX509.default_configuration
-                   ), args[:result_type] || 'html')
+      decoded = _proceed(args[:configuration] || ActionMailerX509.default_configuration)
+      proceed_part(decoded, args[:result_type] || 'html')
     end
 
     def method_missing(name, *args, &block)
@@ -50,6 +49,10 @@ module Mail #:nodoc:
       end
 
 
+      def split_on_parts(obj)
+        obj.body.split!(obj.boundary) if obj.parts.blank? && obj.boundary.present?
+      end
+
       def _proceed(configuration = nil)
         config = ActionMailerX509.get_configuration(configuration)
         if (signed = is_signed?) || is_crypted?
@@ -66,6 +69,9 @@ module Mail #:nodoc:
       end
 
       def proceed_part(part, result_type = 'html')
+        #todo: not checked
+        self.attachments += part.attachments if part != self && part.attachments.present?
+
         if part.multipart?
           if alternative?(part)
             variants = part.parts.each_with_object({}) {|p, res| res.update(p.sub_type => p)}
@@ -75,13 +81,25 @@ module Mail #:nodoc:
           _decode_body(result_type, @new_part || part)
         else
           part.decoded unless part.attachment?
+
+          #unless part.attachment?
+          #  part.decoded
+          #else
+          #  #content_type = part.header['Content-Type']
+          #  #content_disposition = part.header['Content-Disposition']
+          #  #content_encoding = part.header['Content-Transfer-Encoding']
+          #  #
+          #  #self.attachments[content_type.filename] = {mime_type: "#{content_type.main_type}/#{content_type.sub_type}",
+          #  #                                    #encoding: 'SpecialEncoding',
+          #  #                                    content: part.decoded }
+          #  nil
+          #end
         end.to_s
       end
 
     # we need manually split body on parts and decode each part separate
       def _decode_body(result_type, obj = self)
-        obj.body.split!(obj.boundary) if obj.parts.blank? && obj.boundary.present?
-
+        split_on_parts(obj)
 
         if obj.parts.present?
           proceed_parts = obj.parts.map {|part| proceed_part(part, result_type).force_encoding('utf-8')}
