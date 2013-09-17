@@ -25,6 +25,10 @@ module ActionMailerX509
       configurations[name.to_sym] = Configuration.new(params)
     end
 
+    def update_configuration(name, params = {})
+      configurations[name.to_sym].try(:proceed_settings, params)
+    end
+
     def get_configuration(name)
       configurations[(name || ActionMailerX509.default_configuration).try :to_sym]
     end

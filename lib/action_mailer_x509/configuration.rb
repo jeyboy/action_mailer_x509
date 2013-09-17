@@ -1,9 +1,13 @@
 require 'action_mailer_x509/security_object'
 
 class Configuration
-  def initialize(params = {})
+  def proceed_settings(params)
     params.symbolize_keys!
     params.each_pair { |k, v| self.send("#{k}=".to_sym, v) }
+  end
+
+  def initialize(params = {})
+    proceed_settings(params)
   end
 
   class_attribute :sign_enable
