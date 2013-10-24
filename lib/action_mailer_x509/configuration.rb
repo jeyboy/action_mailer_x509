@@ -19,6 +19,8 @@ class Configuration
   class_attribute :crypt_cipher
   self.crypt_cipher = 'des'
 
+  class_attribute :last_error
+
   class_attribute :certs_path
 
   class_attribute :sign_cert
@@ -30,6 +32,9 @@ class Configuration
 
   class_attribute :sign_cert_p12
   class_attribute :crypt_cert_p12
+
+  class_attribute :sign_cert_der
+  class_attribute :crypt_cert_der
 
   #Todo: add func sign_demand?, crypt_demand?
 
@@ -75,14 +80,22 @@ class Configuration
 
   def get_crypter
     #Todo: add check on valid crypt config
-    raise Exception.new('Configuration not valid for crypt operations') unless crypt_require?
-    ActionMailerX509::X509.new(crypt_configuration)
+    @last_error = 'Configuration not valid for crypt operations' unless crypt_require?
+    begin
+      ActionMailerX509::X509.new(crypt_configuration)
+    rescue => e
+      @last_error = e.message
+    end
   end
 
   def get_signer
     #Todo: add check on valid sign config
-    raise Exception.new('Configuration not valid for sign operations') unless sign_require?
-    ActionMailerX509::X509.new(sign_configuration)
+    @last_error = Exception.new('Configuration not valid for sign operations') unless sign_require?
+    begin
+      ActionMailerX509::X509.new(sign_configuration)
+    rescue => e
+      @last_error = e.message
+    end
   end
 
   def get_certificate_info
@@ -156,9 +169,15 @@ class Configuration
           pass_phrase: sign_passphrase
       }
 
-      conf.merge!(certificate_p12: sign_cert_p12) if @sign_cert_p12
-      conf.merge!(certificate: sign_cert, rsa_key: sign_key) unless @sign_cert_p12
-      conf
+      if @sign_cert_p12
+        conf.merge!(certificate_p12: sign_cert_p12)
+      else
+        if @sign_key
+          conf.merge!(certificate: sign_cert, rsa_key: sign_key)
+        else
+          conf.merge!(certificate: sign_cert)
+        end
+      end
     end
 
     def crypt_configuration
@@ -167,8 +186,14 @@ class Configuration
           pass_phrase: crypt_passphrase
       }
 
-      conf.merge!(certificate_p12: crypt_cert_p12) if @crypt_cert_p12
-      conf.merge!(certificate: crypt_cert, rsa_key: crypt_key) unless @crypt_cert_p12
-      conf
+      if @crypt_cert_p12
+        conf.merge!(certificate_p12: crypt_cert_p12)
+      else
+        if @crypt_key
+          conf.merge!(certificate: crypt_cert, rsa_key: crypt_key)
+        else
+          conf.merge!(certificate: crypt_cert)
+        end
+      end
     end
 end

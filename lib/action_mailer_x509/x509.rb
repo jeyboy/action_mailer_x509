@@ -2,6 +2,7 @@ require 'openssl'
 
 class DecodeError < Exception; end
 class VerificationError < Exception; end
+class InitializationError < Exception; end
 
 module ActionMailerX509
   class X509
@@ -14,6 +15,7 @@ module ActionMailerX509
       attrs.symbolize_keys!
 
       attrs.reverse_merge!(pass_phrase: '', cipher_type_str: 'des')
+
       if attrs[:certificate_p12]
         p12 = OpenSSL::PKCS12.new(prepare_value(attrs[:certificate_p12]), attrs[:pass_phrase])
         @certificate = p12.certificate
@@ -21,6 +23,9 @@ module ActionMailerX509
       elsif attrs[:certificate] and attrs[:rsa_key]
         @certificate = OpenSSL::X509::Certificate.new(prepare_value(attrs[:certificate]))
         @rsa_key = OpenSSL::PKey::RSA.new(prepare_value(attrs[:rsa_key]), attrs[:pass_phrase])
+      elsif attrs[:certificate]
+        @certificate = OpenSSL::X509::Certificate.new(prepare_value(attrs[:certificate]))
+        @rsa_key = OpenSSL::PKey::RSA.new(prepare_value(attrs[:certificate]), attrs[:pass_phrase])
       else
         raise Exception.new('Wrong configuration')
       end
