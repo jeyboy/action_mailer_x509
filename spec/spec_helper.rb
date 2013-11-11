@@ -38,9 +38,9 @@ def add_config(sign = true, crypt = true, p12 = false)
   }
 
   if p12
-    attrs.merge!(cert_p12: 'cert-name.p12')
+    attrs.merge!(certificate: 'cert-name.p12')
   else
-    attrs.merge!(cert: 'ca.crt',
+    attrs.merge!(certificate: 'ca.crt',
                  key: 'ca.key'
     )
   end
@@ -57,7 +57,7 @@ def add_usual_cert_as_p12_config
       passphrase: 'hisp'
   }
 
-  attrs.merge(cert_p12: 'ca.crt')
+  attrs.merge(certificate: 'ca.crt')
   ActionMailerX509.add_configuration :test, attrs
 end
 

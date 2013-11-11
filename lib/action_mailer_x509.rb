@@ -30,7 +30,7 @@ module ActionMailerX509
     end
 
     def get_configuration(name)
-      configurations[(name || ActionMailerX509.default_configuration).try :to_sym]
+      configurations[(name || ActionMailerX509.default_configuration).try(:to_sym)]
     end
 
     def default_certs_path=(path)
